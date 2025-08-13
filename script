@@ -40,7 +40,7 @@ local CoinFarmConnection = nil
 
 --ESP Things
 local ESPFolder = Instance.new("Folder", workspace)
-ESPFolder.Name = config.workspace .. "ESP"
+ESPFolder.Name = "ESP"
 
 local espConfig = {
     AllEsp = false,

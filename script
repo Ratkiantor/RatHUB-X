@@ -1,0 +1,375 @@
+_G.currentVersion = "Version: 2.0.0"
+local Module = loadstring(game:HttpGet("https://gitlab.com/r_soft/main/-/raw/main/ScriptStarter.lua"))()
+local Library = Module.Library
+local SaveManager = Module.SaveManager
+local Window = Module.Window
+local config = Module.config
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterPlayer = game:GetService("StarterPlayer")
+local StarterGui = game:GetService("StarterGui")
+local StarterPack = game:GetService("StarterPack")
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+local Camera = workspace.CurrentCamera
+local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local StarterGui = game:GetService("StarterGui")
+
+SaveManager:SetLibrary(Library) 
+SaveManager:SetFolder(config.workspace.."/MurderMystery2")
+SaveManager:LoadAutoloadConfig(default)
+
+local Tabs = {
+    Home = Window:AddTab({ Title = "Home", Icon = "scan-face"}),
+    Main = Window:AddTab({ Title = "Main", Icon = "layout-grid"}),
+    TPTab = Window:AddTab({ Title = "Teleports", Icon = "map-pin"}),
+    Farm = Window:AddTab({ Title = "Farm", Icon = "coins"}),
+}
+
+local LPSection = Tabs.Home:AddSection("LocalPlayer")
+local ESPSection = Tabs.Main:AddSection("ESP")
+local TPlayers = Tabs.TPTab:AddSection("Players")
+local Role = Tabs.TPTab:AddSection("Roles")
+local Murderer = Tabs.Main:AddSection("Murderer")
+
+local customwalkspeed = 16
+local AutoFarmEnabled = false
+local CoinFarmConnection = nil
+
+--ESP Things
+local ESPFolder = Instance.new("Folder", workspace)
+ESPFolder.Name = config.workspace .. "ESP"
+
+local espConfig = {
+    AllEsp = false,
+    MurderEsp = false,
+    SheriffEsp = false,
+}
+
+local trackedPlayers = {}
+
+local function CreateESP(player)
+    local character = player.Character or player.CharacterAdded:Wait()
+    local head = character:WaitForChild("Head")
+    
+    local billboard = Instance.new("BillboardGui")
+    local textLabel = Instance.new("TextLabel")
+    
+    billboard.Name = player.Name .. "_ESP"
+    billboard.Adornee = head
+    billboard.Size = UDim2.new(0, 200, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Enabled = false
+    billboard.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.TextStrokeTransparency = 0.5
+    textLabel.TextSize = 18
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.Text = player.Name
+    textLabel.Parent = billboard
+    
+    billboard.Parent = ESPFolder
+    
+    trackedPlayers[player] = {
+        Billboard = billboard,
+        Character = character,
+        Connections = {}
+    }
+    
+    trackedPlayers[player].Connections.CharacterAdded = player.CharacterAdded:Connect(function(newChar)
+        trackedPlayers[player].Character = newChar
+        local newHead = newChar:WaitForChild("Head")
+        trackedPlayers[player].Billboard.Adornee = newHead
+    end)
+    
+    return billboard
+end
+
+local ESPUpdateConnection
+local function UpdateESP()
+    if ESPUpdateConnection then
+        ESPUpdateConnection:Disconnect()
+    end
+
+    ESPUpdateConnection = RunService.Heartbeat:Connect(function()
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player == LocalPlayer then continue end
+            if not trackedPlayers[player] then
+                CreateESP(player)
+            end
+        end
+
+        for player, data in pairs(trackedPlayers) do
+            if not Players:FindFirstChild(player.Name) then
+                data.Billboard:Destroy()
+                for _, conn in pairs(data.Connections) do
+                    conn:Disconnect()
+                end
+                trackedPlayers[player] = nil
+                continue
+            end
+
+            local character = data.Character
+            local hasKnife = character and (character:FindFirstChild("Knife") or player.Backpack:FindFirstChild("Knife"))
+            local hasGun = character and (character:FindFirstChild("Gun") or player.Backpack:FindFirstChild("Gun"))
+
+            data.Billboard.Enabled = false
+            data.Billboard.TextLabel.TextColor3 = Color3.new(1, 1, 1)
+
+            if espConfig.MurderEsp and hasKnife then
+                data.Billboard.Enabled = true
+                data.Billboard.TextLabel.TextColor3 = Color3.new(1, 0, 0)
+            end
+            
+            if espConfig.SheriffEsp and hasGun then
+                data.Billboard.Enabled = true
+                data.Billboard.TextLabel.TextColor3 = Color3.new(0, 0, 1)
+            end
+            
+            if espConfig.AllEsp and not hasKnife and not hasGun then
+                data.Billboard.Enabled = true
+            end
+        end
+    end)
+end
+
+--Coins Farm
+local function findCoinContainer()
+    for _, child in pairs(workspace:GetChildren()) do
+        local coinContainer = child:FindFirstChild("CoinContainer")
+        if coinContainer then
+            return coinContainer
+        end
+    end
+    return nil
+end
+
+local function findNearestCoin(radius)
+    local coinContainer = findCoinContainer()
+    if not coinContainer then return nil end
+
+    local humanoidRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRoot then return nil end
+
+    local nearestCoin = nil
+    local nearestDistance = radius
+
+    for _, coin in pairs(coinContainer:GetChildren()) do
+        if coin:IsA("BasePart") then
+            local distance = (coin.Position - humanoidRoot.Position).Magnitude
+            if distance < nearestDistance then
+                nearestCoin = coin
+                nearestDistance = distance
+            end
+        end
+    end
+
+    return nearestCoin
+end
+
+local function teleportToCoin(coin)
+    if coin and LocalPlayer.Character then
+        local humanoidRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if humanoidRoot then
+            humanoidRoot.CFrame = coin.CFrame
+            firetouchinterest(humanoidRoot, coin, 0)
+            firetouchinterest(humanoidRoot, coin, 1)
+        end
+    end
+end
+
+
+local WSInput = LPSection:AddInput("Input", {
+    Title = "Walkspeed",
+    Default = tostring(customwalkspeed),
+    Placeholder = "Enter Walkspeed",
+    Numeric = true,
+    Finished = true,
+    Callback = function(Value)
+        customwalkspeed = tonumber(Value) or 0
+        if walkspeedEnabled then
+            getgenv().Enabled = true
+            getgenv().Speed = Value
+        end
+    end
+})
+
+local ToggleWS = LPSection:AddToggle("WalkSpeedToggle", 
+{
+    Title = "Enable Walkspeed", 
+    Default = false,
+    Callback = function(state)
+        walkspeedEnabled = state 
+        if state then
+            getgenv().Enabled = true
+            getgenv().Speed = customwalkspeed
+            loadstring(game:HttpGet("https://ubhub.pages.dev/game/UniversalScript/SimpleSpeed.lua"))()
+        else
+            getgenv().Enabled = false
+            loadstring(game:HttpGet("https://ubhub.pages.dev/game/UniversalScript/SimpleSpeed.lua"))()
+        end
+    end 
+})
+
+local function toggleNoclip(state)
+    noclipEnabled = state
+    if noclipEnabled then
+        noclipConnection = RunService.Stepped:Connect(function()
+            local character = Players.LocalPlayer.Character
+            if character then
+                for _, part in pairs(character:GetDescendants()) do
+                    if part:IsA("BasePart") and part.CanCollide then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    else
+        if noclipConnection then
+            noclipConnection:Disconnect()
+            noclipConnection = nil
+        end
+    end
+end
+local NC = LPSection:AddToggle("MyToggle", {
+    Title = "Noclip",
+    Default = false,
+    Callback = function(state)
+        toggleNoclip(state)
+    end,
+})
+
+local AllESP = ESPSection:AddToggle("AllEsp", {
+    Title = "All Player ESP",
+    Default = false,
+    Callback = function(state)
+        espConfig.AllEsp = state
+        UpdateESP()
+    end,
+})
+
+local MurdESP = ESPSection:AddToggle("MurderESP", {
+    Title = "Murder ESP",
+    Default = false,
+    Callback = function(state)
+        espConfig.MurderEsp = state
+        UpdateESP()
+    end,
+})
+
+local SheriffESP = ESPSection:AddToggle("SherrfsESP", {
+    Title = "Sheriff ESP",
+    Default = false,
+    Callback = function(state)
+        espConfig.SheriffEsp = state
+        UpdateESP()
+    end
+})
+
+local CoinsFarm = Tabs.Farm:AddToggle("CoinFarm", {
+    Title = "Coin Farm (x40)",
+    Default = false,
+    Callback = function(state)
+        AutoFarmEnabled = state
+        if state then
+            CoinFarmConnection = RunService.Heartbeat:Connect(function()
+                local nearbyCoin = findNearestCoin(50)
+                if nearbyCoin then
+                    teleportToCoin(nearbyCoin)
+                else
+                    local coinContainer = findCoinContainer()
+                    if coinContainer and #coinContainer:GetChildren() > 0 then
+                        teleportToCoin(coinContainer:GetChildren()[math.random(1, #coinContainer:GetChildren())])
+                    end
+                end
+            end)
+        else
+            if CoinFarmConnection then
+                CoinFarmConnection:Disconnect()
+                CoinFarmConnection = nil
+            end
+        end
+    end
+})
+
+
+local playerDropdown = TPlayers:AddDropdown("PlayerDropdown", {
+    Title = "Select Player",
+    Values = {},
+    Default = "Select Player",
+    Callback = function(selected)
+        local target = Players:FindFirstChild(selected)
+        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character:MoveTo(target.Character.HumanoidRootPart.Position)
+        end
+    end
+})
+
+Role:AddButton({
+    Title = "TP to Murderer",
+    Callback = function()
+        for _, player in pairs(Players:GetPlayers()) do
+            local weapon = player.Character and (player.Character:FindFirstChild("Knife") or player.Backpack:FindFirstChild("Knife"))
+            if weapon then
+                LocalPlayer.Character:MoveTo(player.Character.HumanoidRootPart.Position)
+                break
+            end
+        end
+    end
+})
+
+Role:AddButton({
+    Title = "TP to Sheriff",
+    Callback = function()
+        for _, player in pairs(Players:GetPlayers()) do
+            local weapon = player.Character and (player.Character:FindFirstChild("Gun") or player.Backpack:FindFirstChild("Gun"))
+            if weapon then
+                LocalPlayer.Character:MoveTo(player.Character.HumanoidRootPart.Position)
+                break
+            end
+        end
+    end
+})
+--Player Logics
+local function UpdatePlayerList()
+    local players = {}
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            table.insert(players, player.Name)
+        end
+    end
+    playerDropdown:SetValues(players)
+end
+
+--[[ Player Tracking ]]--
+local function InitializePlayer(player)
+    if player ~= LocalPlayer then
+        CreateESP(player)
+    end
+    UpdatePlayerList()
+end
+
+for _, player in ipairs(Players:GetPlayers()) do
+    InitializePlayer(player)
+end
+Players.PlayerAdded:Connect(InitializePlayer)
+Players.PlayerRemoving:Connect(function(player)
+    if trackedPlayers[player] then
+        trackedPlayers[player].Billboard:Destroy()
+        for _, conn in pairs(trackedPlayers[player].Connections) do
+            conn:Disconnect()
+        end
+        trackedPlayers[player] = nil
+    end
+    UpdatePlayerList()
+end)
+UpdateESP()

@@ -446,36 +446,95 @@ local function findMatchingParts()
     scanFolder(workspace)
     return matchingParts
 end
-local AutoCollectChests = CollectSection:AddToggle("AutoCollectChests", {
-    Title = "Auto Collections",
-    Default = false,
-    Callback = function(state)
-        isrunning = state
-        while isrunning do
-            local chestfolder = workspace.Rendered:GetChildren()[13]
-            if chestfolder and chestfolder:IsA("Folder") and #chestfolder:GetChildren() > 0 then
-                for _, chest in ipairs(chestfolder:GetChildren()) do
-                    if not isrunning then break end
-                    if chest:IsA("Model")  then
-                        if selectedMethod == "Tween" then
-                            local args = {
-                                [1] = chest.Name
-                            }
-                            game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Pickups"):WaitForChild("CollectPickup"):FireServer(unpack(args))
-                            task.wait(0.1)
-                        else
-                            char.HumanoidRootPart.CFrame = CFrame.new(chest.CFrame.Position)
+
+-- Feature: Auto Collectibles for BGSI (Bubble Gum Simulator Infinite)
+-- Usage: Call Feature_AutoCollectibles:Init(UISection) to add the toggle to your UI.
+-- Replace 'UISection' with your actual UI tab/section (Orion, Rayfield, etc.)
+
+local Feature_AutoCollectibles = {}
+Feature_AutoCollectibles.collectDistance = 15 -- studs
+Feature_AutoCollectibles.collectiblesFolders = {
+    workspace:FindFirstChild("Orbs"),
+    workspace:FindFirstChild("Coins"),
+    workspace:FindFirstChild("Stars"),
+    workspace:FindFirstChild("Gems"),
+    workspace:FindFirstChild("Chests"),
+}
+Feature_AutoCollectibles.player = game.Players.LocalPlayer
+Feature_AutoCollectibles.enabled = false
+Feature_AutoCollectibles._thread = nil
+
+function Feature_AutoCollectibles:GetRoot()
+    local char = self.player.Character or self.player.CharacterAdded:Wait()
+    return char:FindFirstChild("HumanoidRootPart")
+end
+
+function Feature_AutoCollectibles:FireTouch(part, root)
+    if part and root then
+        firetouchinterest(root, part, 0)
+        task.wait()
+        firetouchinterest(root, part, 1)
+    end
+end
+
+function Feature_AutoCollectibles:CollectLoop()
+    while self.enabled do
+        local root = self:GetRoot()
+        for _, folder in ipairs(self.collectiblesFolders) do
+            if folder then
+                for _, obj in ipairs(folder:GetChildren()) do
+                    if obj:IsA("BasePart") and obj.Transparency < 1 and obj.CanCollide then
+                        local dist = (obj.Position - root.Position).Magnitude
+                        if dist <= self.collectDistance then
+                            self:FireTouch(obj, root)
                         end
-                        wait(0.5)
+                    elseif obj:IsA("Model") then
+                        local main = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+                        if main then
+                            local dist = (main.Position - root.Position).Magnitude
+                            if dist <= self.collectDistance then
+                                self:FireTouch(main, root)
+                            end
+                        end
                     end
                 end
-            else
-                print("chest not found!")
             end
-            wait(1)
         end
+        task.wait(0.15)
     end
-})
+end
+
+function Feature_AutoCollectibles:Enable()
+    if not self.enabled then
+        self.enabled = true
+        self._thread = task.spawn(function() self:CollectLoop() end)
+    end
+end
+
+function Feature_AutoCollectibles:Disable()
+    self.enabled = false
+    if self._thread then
+        task.cancel(self._thread)
+        self._thread = nil
+    end
+end
+
+function Feature_AutoCollectibles:Init(UISection)
+    UISection:AddToggle({
+        Name = "Auto Collectibles",
+        Default = false,
+        Callback = function(val)
+            if val then
+                self:Enable()
+            else
+                self:Disable()
+            end
+        end
+    })
+end
+
+return Feature_AutoCollectibles
+
 -- Island Paths for instant TP via Remote (update as new islands come out)
 local islandRemotePaths = {
     ["Floating Island"] = "Workspace.Worlds.The Overworld.Islands.Floating Island.Island.Portal.Spawn",

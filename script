@@ -3,12 +3,12 @@ local Module = loadstring(game:HttpGet("https://gitlab.com/r_soft/main/-/raw/mai
 local Library = Module.Library
 local SaveManager = Module.SaveManager
 local Window = Library:CreateWindow{
-    Title = config.Name .. tostring(_G.currentVersion),
+    Title = "Rat Hub" .. tostring(_G.currentVersion),
     SubTitle = "",
     TabWidth = 170,
     Size = UDim2.fromOffset(530, 350),
     Acrylic = false,
-    Theme = "RatHUB X",
+    Theme = "UBHub",
     MinimizeKey = Enum.KeyCode.RightShift
 }
 local config = Module.config

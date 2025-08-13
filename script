@@ -2,7 +2,15 @@ _G.currentVersion = "Version: 2.0.0"
 local Module = loadstring(game:HttpGet("https://gitlab.com/r_soft/main/-/raw/main/ScriptStarter.lua"))()
 local Library = Module.Library
 local SaveManager = Module.SaveManager
-local Window = Module.Window
+local Window = Library:CreateWindow{
+    Title = config.Name .. tostring(_G.currentVersion),
+    SubTitle = "",
+    TabWidth = 170,
+    Size = UDim2.fromOffset(530, 350),
+    Acrylic = false,
+    Theme = "RatHUB X",
+    MinimizeKey = Enum.KeyCode.RightShift
+}
 local config = Module.config
 
 local Players = game:GetService("Players")
@@ -138,7 +146,27 @@ local function UpdateESP()
     end)
 end
 
---Coins Farm
+-- Improved Coin Farm
+local function isCharacterAlive()
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    return char and hum and hum.Health > 0
+end
+
+local function getHumanoidRootPart()
+    return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+end
+
+local function smoothMoveTo(position)
+    local hrp = getHumanoidRootPart()
+    if hrp then
+        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid:MoveTo(position)
+        end
+    end
+end
+
 local function findCoinContainer()
     for _, child in pairs(workspace:GetChildren()) do
         local coinContainer = child:FindFirstChild("CoinContainer")
@@ -153,36 +181,34 @@ local function findNearestCoin(radius)
     local coinContainer = findCoinContainer()
     if not coinContainer then return nil end
 
-    local humanoidRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local humanoidRoot = getHumanoidRootPart()
     if not humanoidRoot then return nil end
 
-    local nearestCoin = nil
-    local nearestDistance = radius
-
+    local nearestCoin, nearestDistance
     for _, coin in pairs(coinContainer:GetChildren()) do
         if coin:IsA("BasePart") then
             local distance = (coin.Position - humanoidRoot.Position).Magnitude
-            if distance < nearestDistance then
+            if (not nearestDistance or distance < nearestDistance) and distance < radius then
                 nearestCoin = coin
                 nearestDistance = distance
             end
         end
     end
-
     return nearestCoin
 end
 
-local function teleportToCoin(coin)
-    if coin and LocalPlayer.Character then
-        local humanoidRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if humanoidRoot then
-            humanoidRoot.CFrame = coin.CFrame
-            firetouchinterest(humanoidRoot, coin, 0)
-            firetouchinterest(humanoidRoot, coin, 1)
-        end
+local function touchCoin(coin)
+    local hrp = getHumanoidRootPart()
+    if hrp and coin then
+        -- Move close, but not directly on top to avoid getting stuck
+        local approach = coin.Position + Vector3.new(0, 2, 0)
+        hrp.CFrame = CFrame.new(approach)
+        task.wait(0.1)
+        pcall(firetouchinterest, hrp, coin, 0)
+        task.wait(0.1)
+        pcall(firetouchinterest, hrp, coin, 1)
     end
 end
-
 
 local WSInput = LPSection:AddInput("Input", {
     Title = "Walkspeed",
@@ -271,6 +297,7 @@ local SheriffESP = ESPSection:AddToggle("SherrfsESP", {
     end
 })
 
+-- Improved CoinFarm toggle
 local CoinsFarm = Tabs.Farm:AddToggle("CoinFarm", {
     Title = "Coin Farm (x40)",
     Default = false,
@@ -278,13 +305,17 @@ local CoinsFarm = Tabs.Farm:AddToggle("CoinFarm", {
         AutoFarmEnabled = state
         if state then
             CoinFarmConnection = RunService.Heartbeat:Connect(function()
-                local nearbyCoin = findNearestCoin(50)
-                if nearbyCoin then
-                    teleportToCoin(nearbyCoin)
-                else
-                    local coinContainer = findCoinContainer()
-                    if coinContainer and #coinContainer:GetChildren() > 0 then
-                        teleportToCoin(coinContainer:GetChildren()[math.random(1, #coinContainer:GetChildren())])
+                if not isCharacterAlive() then return end
+                local coin = findNearestCoin(60)
+                if coin then
+                    -- Move close to coin, then touch it
+                    smoothMoveTo(coin.Position + Vector3.new(0, 2, 0))
+                    task.wait(0.15)
+                    touchCoin(coin)
+                    -- Wait for coin to disappear
+                    local tickStart = tick()
+                    while coin.Parent and tick() - tickStart < 1 do
+                        task.wait(0.1)
                     end
                 end
             end)
@@ -296,7 +327,6 @@ local CoinsFarm = Tabs.Farm:AddToggle("CoinFarm", {
         end
     end
 })
-
 
 local playerDropdown = TPlayers:AddDropdown("PlayerDropdown", {
     Title = "Select Player",
@@ -364,6 +394,11 @@ Players.PlayerRemoving:Connect(function(player)
         for _, conn in pairs(trackedPlayers[player].Connections) do
             conn:Disconnect()
         end
+        trackedPlayers[player] = nil
+    end
+    UpdatePlayerList()
+end)
+UpdateESP()
         trackedPlayers[player] = nil
     end
     UpdatePlayerList()

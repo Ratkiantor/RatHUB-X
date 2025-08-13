@@ -21,10 +21,6 @@ local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local StarterGui = game:GetService("StarterGui")
 
-SaveManager:SetLibrary(Library) 
-SaveManager:SetFolder(config.workspace.."/MurderMystery2")
-SaveManager:LoadAutoloadConfig(default)
-
 local Tabs = {
     Home = Window:AddTab({ Title = "Home", Icon = "scan-face"}),
     Main = Window:AddTab({ Title = "Main", Icon = "layout-grid"}),

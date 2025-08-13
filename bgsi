@@ -78,7 +78,7 @@ end
 
 function print2notify(title, message)
     game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "UB Hub | Bubble Gum Simulator INFINITY",
+        Title = "RatHUB X | Bubble Gum Simulator INFINITY",
         Text = message,
         Duration = 5,
     })

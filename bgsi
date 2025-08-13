@@ -436,7 +436,6 @@ FarmingSection:AddToggle("AutoSellMaxToggle", {
 -- latestbubble = game.Players.LocalPlayer.PlayerGui.Main.Bubble.Text
 
     ElapsedTime:SetDesc("⏰ **Time Elapse:** " .. string.format("%d:%02d:%02d", hours, min, sec))
-end
 RunService.Heartbeat:Connect(updateetime)
 
 -- Assume: Shop = Tabs.Shops

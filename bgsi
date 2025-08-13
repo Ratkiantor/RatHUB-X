@@ -1,4 +1,4 @@
-_G.currentVersion = "2.2.10"
+_G.currentVersion = "2.2.50"
 selectedMethod = "Tween"
 local HttpService = game:GetService("HttpService")
 local Module = loadstring(game:HttpGet("https://gitlab.com/r_soft/main/-/raw//main/ScriptStarter.lua"))()

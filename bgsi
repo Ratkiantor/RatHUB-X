@@ -1,4 +1,4 @@
-_G.currentVersion = "2.2.50"
+_G.currentVersion = "2.3.00"
 selectedMethod = "Tween"
 local HttpService = game:GetService("HttpService")
 local Module = loadstring(game:HttpGet("https://gitlab.com/r_soft/main/-/raw//main/ScriptStarter.lua"))()
@@ -274,165 +274,90 @@ local ElapsedTime = CurrentStats:AddParagraph({
     Content = "⏰ **Time Elapsed:** 0:00:00",
 })
 
--- === Services and Variables ===
+-- << CONFIGURATION >>
+local sellLocations = {
+    ["Twilight"] = "Workspace.Worlds.The Overworld.Islands.Twilight.Island.Portal.Spawn",
+    ["Spawn Zone"] = "Workspace.Worlds.The Overworld.Islands.Spawn.Island.Portal.Spawn"
+}
+local sellRemoteName = "SellBubble" -- If your game uses a different remote, change this
+
+-- << SERVICES >>
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
-local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local Remote = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Framework"):WaitForChild("Network"):WaitForChild("Remote"):WaitForChild("RemoteEvent")
 
--- Sell locations: name -> teleport remote path
-local sellLocations = {
-    ["Overworld"] = "Workspace.Worlds.The Overworld.Islands.Floating Island.Island.Portal.Spawn",
-    ["Twilight"] = "Workspace.Worlds.The Overworld.Islands.Twilight.Island.Portal.Spawn",
-}
-local sellRemoteName = "SellBubble"
-
--- State variables
-local autosellReturnCFrame = nil
-local DelayToAutoSell = 0.3
-local latestbubble = "0/0" -- Update this in your main script using the bubble counter text!
-local AutoSellReachedValue = 100000 -- Default, can be set via input
-
--- Helper functions
-local function instantTeleport(remotePath)
-    Remote:FireServer("Teleport", remotePath)
-end
-
-local function teleportToCFrame(cf)
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        char.HumanoidRootPart.CFrame = cf
-    end
-end
-
-local function doSellAt(location)
-    local remotePath = sellLocations[location] or sellLocations["Twilight"]
-    instantTeleport(remotePath)
-    task.wait(1.2)
-    Remote:FireServer(sellRemoteName)
-    task.wait(0.8)
-    if autosellReturnCFrame then
-        teleportToCFrame(autosellReturnCFrame)
-        task.wait(0.7)
-    end
-end
-
--- === UI Variables (Orion, Rayfield etc. adapt as needed) ===
-local customSellAmount = 100000
-local customSellEnabled = false
-local customSellLocation = "Twilight"
-local autoSellBubbleEnabled = false
+-- << STATE >>
+local chosenSellLocation = "Twilight"
 local autoSellMaxEnabled = false
+local returnCFrame = nil
+local latestbubble = "0/0" -- You MUST update this in your own script, e.g. from the GUI
 
--- === UI Elements (pseudo-code) ===
-FarmingSection:AddDropdown("CustomSellLocation", {
-    Title = "Custom Sell Location",
-    Values = { "Twilight", "Overworld" },
+-- << GET CHARACTER EVEN ON RESPAWN >>
+local function getChar()
+    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+end
+
+-- << SELL FUNCTION >>
+local function sellAndReturn(location)
+    local char = getChar()
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        returnCFrame = char.HumanoidRootPart.CFrame
+    end
+
+    -- Teleport to sell
+    Remote:FireServer("Teleport", sellLocations[location] or sellLocations["Twilight"])
+    task.wait(1.1)
+    -- Sell
+    Remote:FireServer(sellRemoteName)
+    task.wait(0.7)
+    -- Return
+    if returnCFrame then
+        local char = getChar()
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = returnCFrame
+        end
+        task.wait(0.5)
+    end
+end
+
+-- << AUTOS: Use your UI lib, this is pseudo-code for structure >>
+-- Replace 'UISection' with your actual UI section/tab object.
+
+-- Sell Location Dropdown Only
+UISection:AddDropdown({
+    Name = "Sell Location",
     Default = "Twilight",
-    Multi = false,
-    Callback = function(value)
-        customSellLocation = value
+    Options = {"Twilight", "Spawn Zone"},
+    Callback = function(opt)
+        chosenSellLocation = opt
     end
 })
 
-FarmingSection:AddInput("CustomSellAmount", {
-    Title = "Sell When Bubble Amount Is...",
-    Description = "Sell when you reach this bubble amount",
-    Default = 100000,
-    Numeric = true,
-    Callback = function(value)
-        customSellAmount = tonumber(value) or 0
-    end
-})
-
-FarmingSection:AddToggle("CustomSellToggle", {
-    Title = "Enable Custom Sell Amount",
+-- Auto Sell Max Toggle Only
+UISection:AddToggle({
+    Name = "Auto Sell Max (Full)",
     Default = false,
-    Callback = function(state)
-        customSellEnabled = state
-        if not state then return end
-        task.spawn(function()
-            while customSellEnabled do
-                local currentBubble = tonumber((latestbubble:match("^(%d+)")))
-                if currentBubble and customSellAmount > 0 and currentBubble >= customSellAmount then
-                    if char and char:FindFirstChild("HumanoidRootPart") then
-                        autosellReturnCFrame = char.HumanoidRootPart.CFrame
+    Callback = function(val)
+        autoSellMaxEnabled = val
+        if val then
+            task.spawn(function()
+                while autoSellMaxEnabled do
+                    -- Parse latestbubble, expected "123/456"
+                    local curr, max = latestbubble:match("^(%d+)%s*/%s*(%d+)")
+                    curr, max = tonumber(curr), tonumber(max)
+                    if curr and max and curr == max then
+                        sellAndReturn(chosenSellLocation)
                     end
-                    doSellAt(customSellLocation)
-                    customSellEnabled = false
-                    FarmingSection.Flags.CustomSellToggle = false -- disables the toggle visually if your UI supports it
+                    task.wait(0.4)
                 end
-                task.wait(0.5)
-            end
-        end)
+            end)
+        end
     end
 })
 
-FarmingSection:AddButton({
-    Title = "Enable Custom Sell Again",
-    Description = "Re-enable custom sell for the next time",
-    Callback = function()
-        customSellEnabled = true
-        FarmingSection.Flags.CustomSellToggle = true
-    end
-})
-
-FarmingSection:AddInput("AutoSellBubbleAmount", {
-    Title = "Auto Sell At Bubble Amount",
-    Description = "Auto sell if bubble > this value",
-    Default = 100000,
-    Numeric = true,
-    Callback = function(value)
-        AutoSellReachedValue = tonumber(value) or 0
-    end
-})
-
-FarmingSection:AddToggle("AutoSellBubbleToggle", {
-    Title = "Auto Sell Bubble",
-    Default = false,
-    Callback = function(state)
-        autoSellBubbleEnabled = state
-        if not state then return end
-        task.spawn(function()
-            while autoSellBubbleEnabled do
-                local firstNumber = tonumber((latestbubble:match("^(%d+)")))
-                if firstNumber and firstNumber > (AutoSellReachedValue or 0) then
-                    if char and char:FindFirstChild("HumanoidRootPart") then
-                        autosellReturnCFrame = char.HumanoidRootPart.CFrame
-                    end
-                    doSellAt("Twilight")
-                end
-                task.wait(DelayToAutoSell)
-            end
-        end)
-    end
-})
-
-FarmingSection:AddToggle("AutoSellMaxToggle", {
-    Title = "Auto Sell Bubble Max (Storage Full)",
-    Default = false,
-    Callback = function(state)
-        autoSellMaxEnabled = state
-        if not state then return end
-        task.spawn(function()
-            while autoSellMaxEnabled do
-                local firstNumber = tonumber((latestbubble:match("^(%d+)")))
-                local secondNumber = tonumber((latestbubble:match("/%s*(%d+)")))
-                if firstNumber and secondNumber and firstNumber == secondNumber then
-                    if char and char:FindFirstChild("HumanoidRootPart") then
-                        autosellReturnCFrame = char.HumanoidRootPart.CFrame
-                    end
-                    doSellAt("Twilight")
-                end
-                task.wait(DelayToAutoSell)
-            end
-        end)
-    end
-})
-
--- === NOTE ===
--- You must set `latestbubble` continuously in your main script!
--- Example:
+-- [IMPORTANT] 
+-- latestbubble must be updated in your main/update loop:
 -- latestbubble = game.Players.LocalPlayer.PlayerGui.Main.Bubble.Text
 
     ElapsedTime:SetDesc("⏰ **Time Elapse:** " .. string.format("%d:%02d:%02d", hours, min, sec))

@@ -1,4 +1,4 @@
-_G.currentVersion = "2.1.10"
+_G.currentVersion = "2.2.10"
 selectedMethod = "Tween"
 local HttpService = game:GetService("HttpService")
 local Module = loadstring(game:HttpGet("https://gitlab.com/r_soft/main/-/raw//main/ScriptStarter.lua"))()
@@ -434,13 +434,18 @@ local function updateetime()
 end
 RunService.Heartbeat:Connect(updateetime)
 
+-- Use the correct RemoteEvent for purchases
+local RemoteEvent = game:GetService("ReplicatedStorage").Shared.Framework.Network.Remote.RemoteEvent
+
+-- Dropdown for Storage/Flavour
+local selectedflavours = {}
 local ChooseFlavour = Shop:AddDropdown("ChooseFlavour", {
     Title = "Choose Storage",
     Values = data.Flavours,
-    Default = "Bubble",
-    Multi = false,
-    Callback = function(value)
-        selectedflavour = value
+    Default = data.Flavours[1] or "",
+    Multi = true,
+    Callback = function(values)
+        selectedflavours = values
     end
 })
 
@@ -448,26 +453,28 @@ local AutoBuyFlavour = Shop:AddToggle("AutoBuyFlavour", {
     Title = "Auto Buy Storage",
     Default = false,
     Callback = function(state)
-        isrunning = state
-        Flavours = data.Flavours
-        while isrunning do
-            local args = {
-                [1] = "GumShopPurchase",
-                [2] = selectedflavour,
-            }
-            game:GetService("ReplicatedStorage").Shared.Framework.Network.Remote.Event:FireServer(unpack(args))
-            wait(0.5)
-        end
+        isrunningFlavour = state
+        task.spawn(function()
+            while isrunningFlavour do
+                for _, flavour in ipairs(selectedflavours) do
+                    RemoteEvent:FireServer("GumShopPurchase", flavour)
+                    task.wait(0.1)
+                end
+                task.wait(0.5)
+            end
+        end)
     end
 })
 
+-- Dropdown for Gum
+local selectedgums = {}
 local ChooseGum = Shop:AddDropdown("ChooseGum", {
     Title = "Choose Gum",
     Values = data.Gums,
-    Default = "nil",
-    Multi = false,
-    Callback = function(value)
-        selectedgum = value
+    Default = data.Gums[1] or "",
+    Multi = true,
+    Callback = function(values)
+        selectedgums = values
     end
 })
 
@@ -475,16 +482,16 @@ local AutoBuyGum = Shop:AddToggle("AutoBuyGum", {
     Title = "Auto Buy Gum",
     Default = false,
     Callback = function(state)
-        isrunning = state
-        Gums = data.Gums
-        while isrunning do
-            local args = {
-                [1] = "GumShopPurchase",
-                [2] = selectedgum,
-            }
-            game:GetService("ReplicatedStorage").Shared.Framework.Network.Remote.Event:FireServer(unpack(args))
-            wait(0.5)
-        end
+        isrunningGum = state
+        task.spawn(function()
+            while isrunningGum do
+                for _, gum in ipairs(selectedgums) do
+                    RemoteEvent:FireServer("GumShopPurchase", gum)
+                    task.wait(0.1)
+                end
+                task.wait(0.5)
+            end
+        end)
     end
 })
 

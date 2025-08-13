@@ -256,157 +256,7 @@ local AntiAFK = LPSection:AddToggle("AntiAFK", {
     end
 })
 
-local AutoSellReached = FarmingSection:AddInput("AutoSellReachedBubble", {
-    Title = "Auto Sell Reached",
-    Description = "ammount of bubble to have before selling",
-    Default = 0,
-    Numeric = true,
-    Callback = function(value)
-        AutoSellReachedValue = tonumber(value) or 0
-    end
-})
 
-local AutoSellPoint = FarmingSection:AddDropdown("AutoSellPoint", {
-    Title = "Auto Sell Point",
-    Description = "Where Selling should happen",
-    Multi = false,
-    Values = {"Twilight", "Robot Factory"},
-    Callback = function(Value)
-        sellpoint = Value
-    end
-})
-AutoSellBacktoIsland = FarmingSection:AddDropdown("AutoSellBacktoIsland", {
-    Title = "Auto Sell Back to Island",
-    Description = "This means after selling you will going to that island.",
-    Values = islandnames,
-    Default = "Zen",
-    Multi = false,
-    Callback = function(value)
-        selectedIslandBack = value
-    end
-})
-AutoBackToTween = false
-AutoBackToTween = FarmingSection:AddToggle("AutoBackToTween", {
-    Title = "Auto Back to Tween",
-    Description = "This means after selling you will going to previous place.",
-    Default = false,
-    Callback = function(state)
-        AutoBackToTween = state
-    end
-})
-DelayToAutoSell = 0.1
-local AutoSellDelay = FarmingSection:AddInput("DelayToAutoSell", {
-    Title = "Delay to Auto Sell",
-    Default = 0.1,
-    Numeric = true,
-    Callback = function(value)
-        DelayToAutoSell = Value
-    end
-})
-local AutoSell = FarmingSection:AddToggle("AutoSellBubble", {
-    Title = "Auto Sell Bubble",
-    Default = false,
-    Callback = function(state)
-        local isAutoSellBubble = state
-        if not isAutoSellBubble then return end
-        task.spawn(function()
-            while isAutoSellBubble do
-                firstNumber = tonumber(latestbubble:match("^%d+"))
-                secondNumber = tonumber(latestbubble:match("/%s*(%d+)"))
-                if firstNumber > AutoSellReachedValue then
-                    local currentPosition = char.HumanoidRootPart.Position
-                    if sellpoint == Twilight then
-                        local args = {
-                            "Teleport",
-                            "Workspace.Worlds.The Overworld.Islands.Twilight.Island.Portal.Spawn"
-                        }
-                        elseif sellpoint == "Robot Factory" then
-                            local args = {
-                                "Teleport",
-                                "Workspace.Worlds.Minigame Paradise.Islands.Robot Factory.Island.Portal.Spawn"
-                            } 
-                        else
-                            sellpoint = "Twilight"
-                        end
-                        Remote:FireServer(unpack(args))                       
-                        local targetPosition = CFrame.new(-70.91,6862.48,118.17)
-                        local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-                        local targetCFrame = CFrame.new(targetPosition.X, targetPosition.Y + 0.5, targetPosition.Z)
-                        local tweenInfo = TweenInfo.new(8, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-                        local tween = TweenService:Create(char.HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
-                        tween:Play()
-                        tween.Completed:Wait()
-                        local args = {
-                            "SellBubble"
-                        }
-                        Remote:FireServer(unpack(args))  
-                        task.wait(2)
-                        local targetLocation = data.Islands[selectedIslandBack]
-                         local args = {
-                            "Teleport",
-                            targetLocation
-                        }
-                        Remote:FireServer(unpack(args))
-                        task.wait(3)
-                        if AutoBackToTween then
-                            local returnCFrame = CFrame.new(currentPosition.X, currentPosition.Y + 0.5, currentPosition.Z)
-                            local returnTween = TweenService:Create(char.HumanoidRootPart, tweenInfo, {CFrame = returnCFrame})
-                            returnTween:Play()
-                            returnTween.Completed:Wait()
-                            wait(0.5)
-                        end
-                    wait(0.5)
-                end
-                task.wait(DelayToAutoSell)
-            end
-        end)
-    end
-})
-local AutoSellMax = FarmingSection:AddToggle("AutoSellWhenMax", {
-    Title = "Auto Sell Bubble Max",
-    Default = false,
-    Callback = function(state)
-        local isAutoSellMaxRunning = state
-        if not isAutoSellMaxRunning then return end
-        task.spawn(function()
-            while isAutoSellMaxRunning do
-                firstNumber = tonumber(latestbubble:match("^%d+"))
-                secondNumber = tonumber(latestbubble:match("/%s*(%d+)"))
-                if firstNumber and secondNumber and firstNumber == secondNumber then
-                    local currentPosition = char.HumanoidRootPart.Position
-                    local args = {
-                        "Teleport",
-                        "Workspace.Worlds.The Overworld.Islands.Twilight.Island.Portal.Spawn"
-                    }
-                    Remote:FireServer(unpack(args))
-                    task.wait(2)               
-                    local args = {
-                        "SellBubble"
-                    }
-                    Remote:FireServer(unpack(args))  
-                    task.wait(2)
-                    local targetLocation = data.Islands[selectedIslandBack]
-                    local args = {
-                        "Teleport",
-                        targetLocation
-                    }
-                    Remote:FireServer(unpack(args))
-                    task.wait(3)
-                    if AutoBackToTween then
-                        local tweenInfo = TweenInfo.new(8, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-                        local returnCFrame = CFrame.new(currentPosition.X, currentPosition.Y + 0.5, currentPosition.Z)
-                        local returnTween = TweenService:Create(char.HumanoidRootPart, tweenInfo, {CFrame = returnCFrame})
-                        returnTween:Play()
-                        returnTween.Completed:Wait()
-                        wait(0.5)
-                    end
-                    wait(0.5)
-                end
-                task.wait(DelayToAutoSell)
-            end
-        end)
-    end
-})
 local AutoBlow = Bubble:AddToggle("AutoBlowBubble", {
     Title = "Auto Blow Bubble",
     Default = false,
@@ -422,6 +272,137 @@ local AutoBlow = Bubble:AddToggle("AutoBlowBubble", {
 local ElapsedTime = CurrentStats:AddParagraph({
     Title = "Elapsed Time",
     Content = "⏰ **Time Elapsed:** 0:00:00",
+})
+
+-- === Setup Variables ===
+local autosellReturnCFrame = nil
+local twilightRemotePath = "Workspace.Worlds.The Overworld.Islands.Twilight.Island.Portal.Spawn"
+local DelayToAutoSell = 0.1 -- Or your preferred default
+local latestbubble = "0"
+local AutoSellReachedValue = 0
+local char = game:GetService("Players").LocalPlayer.Character or game:GetService("Players").LocalPlayer.CharacterAdded:Wait()
+local Remote = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Framework"):WaitForChild("Network"):WaitForChild("Remote"):WaitForChild("RemoteEvent")
+
+-- === Helper Functions ===
+local function instantTeleport(remotePath)
+    Remote:FireServer("Teleport", remotePath)
+end
+
+local function teleportToCFrame(cf)
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        char.HumanoidRootPart.CFrame = cf
+    end
+end
+
+-- === Autosell Bubble (Sell when > X bubbles) ===
+local AutoSell = FarmingSection:AddToggle("AutoSellBubble", {
+    Title = "Auto Sell Bubble",
+    Default = false,
+    Callback = function(state)
+        local isAutoSellBubble = state
+        if not isAutoSellBubble then return end
+        task.spawn(function()
+            while isAutoSellBubble do
+                local firstNumber = tonumber(latestbubble:match("^%d+"))
+                if firstNumber and firstNumber > (AutoSellReachedValue or 0) then
+                    if char and char:FindFirstChild("HumanoidRootPart") then
+                        autosellReturnCFrame = char.HumanoidRootPart.CFrame
+                    end
+                    instantTeleport(twilightRemotePath)
+                    wait(1.2)
+                    Remote:FireServer("SellBubble")
+                    wait(0.8)
+                    if autosellReturnCFrame then
+                        teleportToCFrame(autosellReturnCFrame)
+                        wait(0.7)
+                    end
+                end
+                task.wait(DelayToAutoSell)
+            end
+        end)
+    end
+})
+
+-- === Autosell Max (Sell when storage is full) ===
+local AutoSellMax = FarmingSection:AddToggle("AutoSellWhenMax", {
+    Title = "Auto Sell Bubble Max",
+    Default = false,
+    Callback = function(state)
+        local isAutoSellMaxRunning = state
+        if not isAutoSellMaxRunning then return end
+        task.spawn(function()
+            while isAutoSellMaxRunning do
+                local firstNumber = tonumber(latestbubble:match("^%d+"))
+                local secondNumber = tonumber(latestbubble:match("/%s*(%d+)"))
+                if firstNumber and secondNumber and firstNumber == secondNumber then
+                    if char and char:FindFirstChild("HumanoidRootPart") then
+                        autosellReturnCFrame = char.HumanoidRootPart.CFrame
+                    end
+                    instantTeleport(twilightRemotePath)
+                    wait(1.2)
+                    Remote:FireServer("SellBubble")
+                    wait(0.8)
+                    if autosellReturnCFrame then
+                        teleportToCFrame(autosellReturnCFrame)
+                        wait(0.7)
+                    end
+                end
+                task.wait(DelayToAutoSell)
+            end
+        end)
+    end
+})
+
+-- === Custom Amount Autosell (Sell when bubbles >= custom amount, disables after one sell) ===
+local customSellAmount = 0
+local customSellEnabled = false
+
+local CustomSellInput = FarmingSection:AddInput("CustomSellAmount", {
+    Title = "Sell When Bubble Amount Is...",
+    Description = "Sell when you reach this bubble amount",
+    Default = 100000,
+    Numeric = true,
+    Callback = function(value)
+        customSellAmount = tonumber(value) or 0
+    end
+})
+
+local CustomSellToggle = FarmingSection:AddToggle("CustomSellToggle", {
+    Title = "Enable Custom Sell Amount",
+    Default = false,
+    Callback = function(state)
+        customSellEnabled = state
+        if not state then return end
+        task.spawn(function()
+            while customSellEnabled do
+                local currentBubble = tonumber(latestbubble:match("^%d+"))
+                if currentBubble and customSellAmount > 0 and currentBubble >= customSellAmount then
+                    if char and char:FindFirstChild("HumanoidRootPart") then
+                        autosellReturnCFrame = char.HumanoidRootPart.CFrame
+                    end
+                    instantTeleport(twilightRemotePath)
+                    wait(1.2)
+                    Remote:FireServer("SellBubble")
+                    wait(0.8)
+                    if autosellReturnCFrame then
+                        teleportToCFrame(autosellReturnCFrame)
+                        wait(0.7)
+                    end
+                    CustomSellToggle:Set(false)
+                    customSellEnabled = false
+                end
+                task.wait(0.5)
+            end
+        end)
+    end
+})
+
+FarmingSection:AddButton({
+    Title = "Enable Custom Sell Again",
+    Description = "Re-enable custom sell for the next time",
+    Callback = function()
+        CustomSellToggle:Set(true)
+    end
 })
 
 local starttime = tick()

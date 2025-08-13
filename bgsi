@@ -442,10 +442,10 @@ local selectedflavours = {}
 local ChooseFlavour = Shop:AddDropdown("ChooseFlavour", {
     Title = "Choose Storage",
     Values = data.Flavours,
-    Default = data.Flavours[1] or "",
+    Default = "Bubble",
     Multi = true,
-    Callback = function(values)
-        selectedflavours = values
+    Callback = function(Value)
+        selectedflavours = Value
     end
 })
 
@@ -471,10 +471,10 @@ local selectedgums = {}
 local ChooseGum = Shop:AddDropdown("ChooseGum", {
     Title = "Choose Gum",
     Values = data.Gums,
-    Default = data.Gums[1] or "",
+    Default = "Blue",
     Multi = true,
-    Callback = function(values)
-        selectedgums = values
+    Callback = function(Value)
+        selectedgums = Value
     end
 })
 

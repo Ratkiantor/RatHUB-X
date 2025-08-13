@@ -547,7 +547,16 @@ local AutoCollectChests = CollectSection:AddToggle("AutoCollectChests", {
         end
     end
 })
--- Island Heights (Y-coordinates only)
+-- Island Paths for instant TP via Remote (update as new islands come out)
+local islandRemotePaths = {
+    ["Floating Island"] = "Workspace.Worlds.The Overworld.Islands.Floating Island.Island.Portal.Spawn",
+    ["Outer Space"]    = "Workspace.Worlds.The Overworld.Islands.Outer Space.Island.Portal.Spawn",
+    ["The Void"]       = "Workspace.Worlds.The Overworld.Islands.The Void.Island.Portal.Spawn",
+    ["Twilight"]       = "Workspace.Worlds.The Overworld.Islands.Twilight.Island.Portal.Spawn",
+    ["Zen"]            = "Workspace.Worlds.The Overworld.Islands.Zen.Island.Portal.Spawn",
+}
+
+-- Heights for tween fallback (from your previous message)
 local islandHeights = {
     ["Floating Island"] = 412.868,
     ["Outer Space"] = 2650.826,
@@ -556,22 +565,19 @@ local islandHeights = {
     ["Zen"] = 15962.706,
 }
 
--- Helper to get the teleport position for an island
-local function getIslandPosition(islandName)
+local unlockedIslands = unlockedIslands or {}
+
+local function getIslandTweenPosition(islandName)
     local y = islandHeights[islandName]
     if not y then return nil end
     if char and char:FindFirstChild("HumanoidRootPart") then
         local pos = char.HumanoidRootPart.Position
-        return Vector3.new(pos.X, y + 5, pos.Z) -- +5 so you don't get stuck inside platforms
+        return Vector3.new(pos.X, y + 5, pos.Z)
     else
         return Vector3.new(0, y + 5, 0)
     end
 end
 
--- Unlocked islands tracking
-local unlockedIslands = unlockedIslands or {}
-
--- Option to always force bypass or not
 local ForceTeleport = Island:AddToggle("ForceTeleportIsland", {
     Title = "Force Teleport (Bypass Unlock)",
     Default = false,
@@ -580,26 +586,25 @@ local ForceTeleport = Island:AddToggle("ForceTeleportIsland", {
     end
 })
 
--- Smart teleport function: tween if not unlocked, else use portal
 local function smartIslandTeleport(islandName)
     if not islandName then
         warn("No island selected!")
         return
     end
 
-    -- If unlocked (from script or game), use the portal/remote teleport
-    if unlockedIslands[islandName] or (data.Islands[islandName] and not forceIslandTeleport) then
-        local targetLocation = data.Islands[islandName]
-        if targetLocation then
-            local args = {"Teleport", targetLocation}
+    -- If unlocked or user disables force-teleport, use instant remote
+    if unlockedIslands[islandName] or (islandRemotePaths[islandName] and not forceIslandTeleport) then
+        local remotePath = islandRemotePaths[islandName]
+        if remotePath then
+            local args = {"Teleport", remotePath}
             Remote:FireServer(unpack(args))
-            print("Teleported via portal to:", islandName)
+            print("Instant teleported via remote to:", islandName)
         else
-            warn("Teleport location not found for:", islandName)
+            warn("Remote path not found for:", islandName)
         end
     -- Otherwise, use tween to move to the island (bypass unlock)
     elseif forceIslandTeleport and islandHeights[islandName] then
-        local pos = getIslandPosition(islandName)
+        local pos = getIslandTweenPosition(islandName)
         if char and char:FindFirstChild("HumanoidRootPart") then
             local distance = (char.HumanoidRootPart.Position - pos).Magnitude
             local tweenspeed = math.clamp(distance / 50, 2, 8)
@@ -610,11 +615,11 @@ local function smartIslandTeleport(islandName)
             print("Tweened to:", islandName)
             unlockedIslands[islandName] = true -- Mark as unlocked for future
             -- Optional: auto-fire remote after tween to ensure true unlock in game data
-            local targetLocation = data.Islands[islandName]
-            if targetLocation then
-                local args = {"Teleport", targetLocation}
+            local remotePath = islandRemotePaths[islandName]
+            if remotePath then
+                local args = {"Teleport", remotePath}
                 Remote:FireServer(unpack(args))
-                print("Unlocked and teleported via portal to:", islandName)
+                print("Unlocked and instant teleported via remote to:", islandName)
             end
         else
             warn("Character not found!")
@@ -624,7 +629,6 @@ local function smartIslandTeleport(islandName)
     end
 end
 
--- UI: Dropdown for islands (ensure your dropdown source includes all relevant names)
 Tp2Island = Island:AddDropdown("Tp2Island", {
     Title = "Select Island",
     Values = { "Floating Island", "Outer Space", "The Void", "Twilight", "Zen" },
@@ -635,16 +639,14 @@ Tp2Island = Island:AddDropdown("Tp2Island", {
     end
 })
 
--- UI: Button to trigger smart teleport
 Island:AddButton({
     Title = "Teleport to Island",
-    Description = "Smart teleport: will unlock and remember islands for future portal use.",
+    Description = "Smart teleport: will unlock and remember islands for instant remote use.",
     Callback = function()
         smartIslandTeleport(selectedIsland)
     end
 })
 
--- Optional: Add ability to reset unlockedIslands (for testing)
 Island:AddButton({
     Title = "Reset Unlocked Islands",
     Description = "Clears script-tracked unlocked islands (does not affect real game data).",

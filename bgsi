@@ -1,0 +1,1249 @@
+_G.currentVersion = "2.1.10"
+selectedMethod = "Tween"
+local HttpService = game:GetService("HttpService")
+local Module = loadstring(game:HttpGet("https://gitlab.com/r_soft/main/-/raw//main/ScriptStarter.lua"))()
+local Library = Module.Library
+local SaveManager = Module.SaveManager
+local config = Module.config
+local Window = Module.Window
+local config = Module.config
+local queuetp = (syn and syn.queue_on_teleport) or queue_on_teleport or (fluxus and fluxus.queue_on_teleport)
+local WebhookLib = loadstring(game:HttpGet("https://gitlab.com/r_soft/main/-/raw/main/Library/Webhook.lua"))()
+SaveManager:SetLibrary(Library)
+SaveManager:SetFolder(config.workspace.. "/BubbleGumSimulatorInfinity")
+local VirtualUser = game:GetService("VirtualUser")
+local Player = game.Players.LocalPlayer
+local LocalPlayer = game.Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
+local workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local char = Player.Character or Player.CharacterAdded:Wait()
+local leaderstats = Player:WaitForChild("leaderstats")
+local data = loadstring(game:HttpGet("https://gitlab.com/r_soft/main/-/raw/main/Game%20Data/Bubble%20Gum%20Simulator%20INFINITY/data.lua"))()
+local Remote = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Framework"):WaitForChild("Network"):WaitForChild("Remote"):WaitForChild("RemoteEvent")
+
+local islandnames = {}
+for name, _ in pairs(data.Islands) do
+    table.insert(islandnames, name)
+end
+local Webhookcount = 0
+local Webhookurl = ""
+local Tabs = {
+    Home = Window:AddTab({Title = "Home", Icon = "scan-face"}),
+    Main = Window:AddTab({Title = "Main", Icon = "layout-grid"}),
+    Egg = Window:AddTab({Title = "Eggs", Icon = "egg"}),
+    Inventory = Window:AddTab({Title = "Inventory", Icon = "backpack"}),
+    Shops = Window:AddTab({Title = "Shop", Icon = "shopping-bag"}),
+    Teleports = Window:AddTab({Title = "Teleports", Icon = "map-pin"}),
+    Status = Window:AddTab({Title = "Status", Icon = "info"}),
+    Webhook = Window:AddTab({Title = "Webhook", Icon = "webhook"}),
+    Misc = Window:AddTab({Title = "Miscellanous", Icon = "box"}),
+    Settings = Window:AddTab({Title = "Settings", Icon = "settings"}),
+}
+SaveManager:BuildConfigSection(Tabs.Settings)
+local Discord = Tabs.Home:AddSection("Discord")
+local LPSection = Tabs.Home:AddSection("LocalPlayer")
+local Bubble = Tabs.Main:AddSection("Bubble")
+local RiftBubbleSection = Tabs.Main:AddSection("Rift Bubbles")
+local FarmingSection = Tabs.Main:AddSection("Selling")
+local CollectSection = Tabs.Main:AddSection("Collection")
+local CurrentStats = Tabs.Status:AddSection("Current Stats")
+local Shop = Tabs.Shops:AddSection("Gum / Storage")
+local Pets = Tabs.Egg:AddSection("Hatching Eggs")
+local PetsSection = Tabs.Inventory:AddSection("Pets")
+local Island = Tabs.Teleports:AddSection("Island")
+local WHConfig = Tabs.Webhook:AddSection("Webhook Config")
+local Notification = Tabs.Webhook:AddSection("Notification")
+local Reward = Tabs.Main:AddSection("Reward")
+local Mastery = Tabs.Inventory:AddSection("Mastery")
+local Potion = Tabs.Inventory:AddSection("Potions")
+local Server = Tabs.Settings:AddSection("Server")
+local RiftChests = Tabs.Main:AddSection("Rift Chests")
+local Tweaks = Tabs.Misc:AddSection("Tweaks")
+local RiftEdition = Tabs.Egg:AddSection("Rift Eggs")
+
+function tweenprox(x, y, z)
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local targetpos = Vector3.new(x, y, z)
+    local currentpos = char.HumanoidRootPart.Position
+    local distance = (targetpos - currentpos).Magnitude
+    local tweenspeed = math.clamp(distance / 50, 20, 50)
+    local info = TweenInfo.new(tweenspeed, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(char.HumanoidRootPart, info, {CFrame = CFrame.new(targetpos)})
+    tween:Play()
+    tween.Completed:Wait()
+end
+
+
+function print2notify(title, message)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "UB Hub | Bubble Gum Simulator INFINITY",
+        Text = message,
+        Duration = 5,
+    })
+end
+
+function openAfterHop()
+    if queuetp then
+        queuetp(loadstring(game:HttpGet("https://raw.githubusercontent.com/TeamUBHub/Script-Roblox/refs/heads/main/Bubble%20Gum%20Simulator%20INFINITY.lua"))())
+    else
+        Window:Dialog{
+            Title = "❌ Error",
+            Content = "What kind of executor is this?. No queue on teleport. \n This means the script has to be manually executed to load or added to autoexecute",
+            Buttons = {
+                {
+                    Title = "OK",
+                    Callback = function() end
+                }
+            }
+        }
+        assert(false, "queue_on_tp functions not found!")
+    end
+end
+task.spawn(function()
+    while true do
+        local coins = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.HUD.Left.Currency.Coins.Frame.Label.ContentText
+        local gems = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.HUD.Left.Currency.Gems.Frame.Label.ContentText
+        local bubble = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.HUD.Left.Currency.Bubble.Frame.Label.ContentText
+        latestbubble = bubble
+        firstNumber = tonumber(latestbubble:match("^%d+"))
+        secondnuber = tonumber(latestbubble:match("/%s*(%d+)"))
+        latestcoins = coins
+        latestgems = gems
+        task.wait(1)
+    end
+end)
+Discord:AddButton({
+    Title = "Join Discord",
+    Description = "Click to copy invite link",
+    Callback = function()
+        setclipboard("https://discord.gg/pn8xyhuSeV")
+        if request then
+            local success, err = pcall(function()
+                request({
+            Url = 'http://127.0.0.1:6463/rpc?v=1',
+            Method = 'POST',
+            Headers = {
+                ['Content-Type'] = 'application/json',
+                Origin = 'https://discord.com'
+            },
+            Body = HttpService:JSONEncode({
+                cmd = 'INVITE_BROWSER',
+                nonce = HttpService:GenerateGUID(false),
+                args = {code = "pn8xyhuSeV"}
+            })
+        })
+    end)
+end
+
+        Library:Notify({
+            Title = "Copy Link",
+            Description = "Discord link copied to clipboard!",
+            Duration = 5,
+        })
+    end
+})
+--LP Area
+local WSInput = LPSection:AddInput("WalkSpeed", {
+    Title = "Input WalkSpeed",
+    Description = "If taken back choose lower value",
+    Default = 16,
+    Numeric = true,
+    Callback = function(Value)
+        customwalkspeed = tonumber(Value) or 0
+        if walkspeedEnabled then
+            getgenv().Enabled = true 
+            getgenv().Speed = Value
+        end
+    end
+})
+
+local WSEnabled = LPSection:AddToggle("WalkSpeedEnabled", {
+    Title = "Enable Walkspeed",
+    Default = false,
+    Callback = function(state)
+        walkspeedEnabled = state
+        if state then
+            if customwalkspeed > 42 then
+                customwalkspeed = 42
+                Library:Notify({
+                    Title = "WalkSpeed",
+                    Content = "WalkSpeed set to 42, max value",
+                    Duration = 5,
+                })
+            end 
+            getgenv().Enabled = true
+            getgenv().Speed = customwalkspeed
+            loadstring(game:HttpGet("https://ubhub.pages.dev/game/UniversalScript/SimpleSpeed.lua"))()
+        else
+            getgenv().Enabled = false
+            loadstring(game:HttpGet("https://ubhub.pages.dev/game/UniversalScript/SimpleSpeed.lua"))()
+        end
+    end
+})
+
+local infjumps = LPSection:AddToggle("InfiniteJumpToggle", 
+{
+    Title = "Infinite Jump", 
+    Default = false,
+    Callback = function(state)
+        local player = game:GetService('Players').LocalPlayer
+        local userInputService = game:GetService('UserInputService')    
+        if state then
+            if not _G.infinJumpConnection then
+                _G.infinJumpConnection = userInputService.JumpRequest:Connect(function()
+                    local character = player.Character
+                    if character and character:FindFirstChildOfClass("Humanoid") then
+                        character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+                    end
+                end)
+            end
+        else
+            if _G.infinJumpConnection then
+                _G.infinJumpConnection:Disconnect()
+                _G.infinJumpConnection = nil
+            end
+        end
+    end
+})
+
+local function toggleNoclip(state)
+    noclipEnabled = state
+    if noclipEnabled then
+        noclipConnection = RunService.Stepped:Connect(function()
+            local character = Players.LocalPlayer.Character
+            if character then
+                for _, part in pairs(character:GetDescendants()) do
+                    if part:IsA("BasePart") and part.CanCollide then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    else
+        if noclipConnection then
+            noclipConnection:Disconnect()
+            noclipConnection = nil
+        end
+    end
+end
+
+NC = LPSection:AddToggle("Noclip", {
+    Title = "Noclip",
+    Default = false,
+    Callback = function(state)
+        toggleNoclip(state)
+    end
+})
+
+local AntiAFK = LPSection:AddToggle("AntiAFK", {
+    Title = "Anti AFK",
+    Default = true,
+    Callback = function(state)
+        local player = game.Players.LocalPlayer
+        local virtualUser = game:GetService("VirtualUser")
+        if state then
+            LocalPlayer.Idled:Connect(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end)
+        else
+            if LocalPlayer:FindFirstChild("Idled") then
+                LocalPlayer.Idled:Disconnect()
+            end
+        end
+    end
+})
+
+local AutoSellReached = FarmingSection:AddInput("AutoSellReachedBubble", {
+    Title = "Auto Sell Reached",
+    Description = "ammount of bubble to have before selling",
+    Default = 0,
+    Numeric = true,
+    Callback = function(value)
+        AutoSellReachedValue = tonumber(value) or 0
+    end
+})
+
+local AutoSellPoint = FarmingSection:AddDropdown("AutoSellPoint", {
+    Title = "Auto Sell Point",
+    Description = "Where Selling should happen",
+    Multi = false,
+    Values = {"Twilight", "Robot Factory"},
+    Callback = function(Value)
+        sellpoint = Value
+    end
+})
+AutoSellBacktoIsland = FarmingSection:AddDropdown("AutoSellBacktoIsland", {
+    Title = "Auto Sell Back to Island",
+    Description = "This means after selling you will going to that island.",
+    Values = islandnames,
+    Default = "Zen",
+    Multi = false,
+    Callback = function(value)
+        selectedIslandBack = value
+    end
+})
+AutoBackToTween = false
+AutoBackToTween = FarmingSection:AddToggle("AutoBackToTween", {
+    Title = "Auto Back to Tween",
+    Description = "This means after selling you will going to previous place.",
+    Default = false,
+    Callback = function(state)
+        AutoBackToTween = state
+    end
+})
+DelayToAutoSell = 0.1
+local AutoSellDelay = FarmingSection:AddInput("DelayToAutoSell", {
+    Title = "Delay to Auto Sell",
+    Default = 0.1,
+    Numeric = true,
+    Callback = function(value)
+        DelayToAutoSell = Value
+    end
+})
+local AutoSell = FarmingSection:AddToggle("AutoSellBubble", {
+    Title = "Auto Sell Bubble",
+    Default = false,
+    Callback = function(state)
+        local isAutoSellBubble = state
+        if not isAutoSellBubble then return end
+        task.spawn(function()
+            while isAutoSellBubble do
+                firstNumber = tonumber(latestbubble:match("^%d+"))
+                secondNumber = tonumber(latestbubble:match("/%s*(%d+)"))
+                if firstNumber > AutoSellReachedValue then
+                    local currentPosition = char.HumanoidRootPart.Position
+                    if sellpoint == Twilight then
+                        local args = {
+                            "Teleport",
+                            "Workspace.Worlds.The Overworld.Islands.Twilight.Island.Portal.Spawn"
+                        }
+                        elseif sellpoint == "Robot Factory" then
+                            local args = {
+                                "Teleport",
+                                "Workspace.Worlds.Minigame Paradise.Islands.Robot Factory.Island.Portal.Spawn"
+                            } 
+                        else
+                            sellpoint = "Twilight"
+                        end
+                        Remote:FireServer(unpack(args))                       
+                        local targetPosition = CFrame.new(-70.91,6862.48,118.17)
+                        local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+                        local targetCFrame = CFrame.new(targetPosition.X, targetPosition.Y + 0.5, targetPosition.Z)
+                        local tweenInfo = TweenInfo.new(8, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+                        local tween = TweenService:Create(char.HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
+                        tween:Play()
+                        tween.Completed:Wait()
+                        local args = {
+                            "SellBubble"
+                        }
+                        Remote:FireServer(unpack(args))  
+                        task.wait(2)
+                        local targetLocation = data.Islands[selectedIslandBack]
+                         local args = {
+                            "Teleport",
+                            targetLocation
+                        }
+                        Remote:FireServer(unpack(args))
+                        task.wait(3)
+                        if AutoBackToTween then
+                            local returnCFrame = CFrame.new(currentPosition.X, currentPosition.Y + 0.5, currentPosition.Z)
+                            local returnTween = TweenService:Create(char.HumanoidRootPart, tweenInfo, {CFrame = returnCFrame})
+                            returnTween:Play()
+                            returnTween.Completed:Wait()
+                            wait(0.5)
+                        end
+                    wait(0.5)
+                end
+                task.wait(DelayToAutoSell)
+            end
+        end)
+    end
+})
+local AutoSellMax = FarmingSection:AddToggle("AutoSellWhenMax", {
+    Title = "Auto Sell Bubble Max",
+    Default = false,
+    Callback = function(state)
+        local isAutoSellMaxRunning = state
+        if not isAutoSellMaxRunning then return end
+        task.spawn(function()
+            while isAutoSellMaxRunning do
+                firstNumber = tonumber(latestbubble:match("^%d+"))
+                secondNumber = tonumber(latestbubble:match("/%s*(%d+)"))
+                if firstNumber and secondNumber and firstNumber == secondNumber then
+                    local currentPosition = char.HumanoidRootPart.Position
+                    local args = {
+                        "Teleport",
+                        "Workspace.Worlds.The Overworld.Islands.Twilight.Island.Portal.Spawn"
+                    }
+                    Remote:FireServer(unpack(args))
+                    task.wait(2)               
+                    local args = {
+                        "SellBubble"
+                    }
+                    Remote:FireServer(unpack(args))  
+                    task.wait(2)
+                    local targetLocation = data.Islands[selectedIslandBack]
+                    local args = {
+                        "Teleport",
+                        targetLocation
+                    }
+                    Remote:FireServer(unpack(args))
+                    task.wait(3)
+                    if AutoBackToTween then
+                        local tweenInfo = TweenInfo.new(8, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+                        local returnCFrame = CFrame.new(currentPosition.X, currentPosition.Y + 0.5, currentPosition.Z)
+                        local returnTween = TweenService:Create(char.HumanoidRootPart, tweenInfo, {CFrame = returnCFrame})
+                        returnTween:Play()
+                        returnTween.Completed:Wait()
+                        wait(0.5)
+                    end
+                    wait(0.5)
+                end
+                task.wait(DelayToAutoSell)
+            end
+        end)
+    end
+})
+local AutoBlow = Bubble:AddToggle("AutoBlowBubble", {
+    Title = "Auto Blow Bubble",
+    Default = false,
+    Callback = function(state)
+        while state do
+            local args = { [1] = "BlowBubble" }
+            game:GetService("ReplicatedStorage").Shared.Framework.Network.Remote.RemoteEvent:FireServer(unpack(args))
+            wait(0.1)
+        end
+    end
+})
+
+local ElapsedTime = CurrentStats:AddParagraph({
+    Title = "Elapsed Time",
+    Content = "⏰ **Time Elapsed:** 0:00:00",
+})
+
+local starttime = tick()
+local function updateetime()
+    local elapsedtime = tick() - starttime
+    local hours = math.floor(elapsedtime / 3600)
+    local min = math.floor((elapsedtime % 3600) / 60)
+    local sec = math.floor(elapsedtime % 60)
+    ElapsedTime:SetDesc("⏰ **Time Elapse:** " .. string.format("%d:%02d:%02d", hours, min, sec))
+end
+RunService.Heartbeat:Connect(updateetime)
+
+local ChooseFlavour = Shop:AddDropdown("ChooseFlavour", {
+    Title = "Choose Storage",
+    Values = data.Flavours,
+    Default = "Bubble",
+    Multi = false,
+    Callback = function(value)
+        selectedflavour = value
+    end
+})
+
+local AutoBuyFlavour = Shop:AddToggle("AutoBuyFlavour", {
+    Title = "Auto Buy Storage",
+    Default = false,
+    Callback = function(state)
+        isrunning = state
+        Flavours = data.Flavours
+        while isrunning do
+            local args = {
+                [1] = "GumShopPurchase",
+                [2] = selectedflavour,
+            }
+            game:GetService("ReplicatedStorage").Shared.Framework.Network.Remote.Event:FireServer(unpack(args))
+            wait(0.5)
+        end
+    end
+})
+
+local ChooseGum = Shop:AddDropdown("ChooseGum", {
+    Title = "Choose Gum",
+    Values = data.Gums,
+    Default = "nil",
+    Multi = false,
+    Callback = function(value)
+        selectedgum = value
+    end
+})
+
+local AutoBuyGum = Shop:AddToggle("AutoBuyGum", {
+    Title = "Auto Buy Gum",
+    Default = false,
+    Callback = function(state)
+        isrunning = state
+        Gums = data.Gums
+        while isrunning do
+            local args = {
+                [1] = "GumShopPurchase",
+                [2] = selectedgum,
+            }
+            game:GetService("ReplicatedStorage").Shared.Framework.Network.Remote.Event:FireServer(unpack(args))
+            wait(0.5)
+        end
+    end
+})
+
+local RedeemAllCode = Tweaks:AddButton({
+    Title = "Redeem All Codes",
+    Callback = function()
+        codes = data.codes
+        for _, code in pairs(codes) do
+            local args = {
+                "RedeemCode",
+                code
+            }
+            Remote:InvokeServer(unpack(args))
+            wait(0.5)            
+        end
+    end
+})
+
+local function findMatchingParts()
+    local matchingParts = {}
+    local function scanFolder(parent)
+        for _, obj in ipairs(parent:GetDescendants()) do
+            if obj:IsA("MeshPart") and (obj.Name:lower():match("coin")) and not obj.Name:find("Meshes/Coin", 1, true) and not obj.Name:lower():find("Meshes/bgscoin", 1, true) then
+                table.insert(matchingParts, obj)
+            end
+        end
+    end
+    scanFolder(workspace)
+    return matchingParts
+end
+local AutoCollectChests = CollectSection:AddToggle("AutoCollectChests", {
+    Title = "Auto Collections",
+    Default = false,
+    Callback = function(state)
+        isrunning = state
+        while isrunning do
+            local chestfolder = workspace.Rendered:GetChildren()[13]
+            if chestfolder and chestfolder:IsA("Folder") and #chestfolder:GetChildren() > 0 then
+                for _, chest in ipairs(chestfolder:GetChildren()) do
+                    if not isrunning then break end
+                    if chest:IsA("Model")  then
+                        if selectedMethod == "Tween" then
+                            local args = {
+                                [1] = chest.Name
+                            }
+                            game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Pickups"):WaitForChild("CollectPickup"):FireServer(unpack(args))
+                            task.wait(0.1)
+                        else
+                            char.HumanoidRootPart.CFrame = CFrame.new(chest.CFrame.Position)
+                        end
+                        wait(0.5)
+                    end
+                end
+            else
+                print("chest not found!")
+            end
+            wait(1)
+        end
+    end
+})
+Tp2Island = Island:AddDropdown("Tp2Island", {
+    Title = "Select Island",
+    Values = islandnames,
+    Default = "Zen",
+    Multi = false,
+    Callback = function(value)
+        selectedIsland = value
+    end
+})
+
+Island:AddButton({
+    Title = "Teleport to Island",
+    Description = "Teleport to selected island",
+    Callback = function()
+        -- Ensure selectedIsland is set
+        if selectedIsland and data.Islands[selectedIsland] then
+            local targetLocation = data.Islands[selectedIsland]
+            local args = {
+                "Teleport",
+                targetLocation
+            }
+            print(targetLocation)
+            Remote:FireServer(unpack(args))
+            print("Teleporting to:", selectedIsland)
+        else
+            warn("Invalid teleport location or no island selected!")
+        end
+    end
+})
+local webhookUrl = ""
+local WHInput = WHConfig:AddInput("WebhookUrl", {
+    Title = "Webhook URL",
+    Default = webhookUrl,
+    Placeholder = "Enter Webhook URL",
+    Callback = function(Value)
+        webhookUrl = Value
+    end
+})
+
+local WHPingUserId = WHConfig:AddInput("WebhookPingUserId", {
+    Title = "User ID to Ping",
+    Default = "",
+    Placeholder = "Enter User ID",
+    Numeric = true,
+    Callback = function(Value)
+        pingUserId = Value
+    end
+})
+
+WHConfig:AddButton({
+    Title = "Send Test Message",
+    Callback = function()
+        if webhookUrl ~= "" then
+            WebhookLib.SendMessageEMBED(webhookUrl, {
+                title = "Test Message | UB Hub",
+                description = "This is a test message from the script to check if the webhook is working.",
+                color = 65280, 
+                fields = {
+                    {
+                        name = "-> Account",
+                        value = "" .. Player.Name,
+                        inline = false
+                    },
+                    {
+                        name = "-> Software Info",
+                        value = "" .. _G.currentVersion .. "\n" .. "Executor:" .. identifyexecutor(),
+                        inline = false
+                    }
+                },
+                footer = {
+                    text = "Report any bugs to <#1325808008743223316>",
+                },
+                thumbnail = {
+                    url = "https://gitlab.com/r_soft/main/-/raw/main/UB_hub_logo.png"
+                },
+                author = {
+                    name = "UB Hub | Bubble Gum Simulator INFINITY",
+                }
+            }, pingUserId ~= "" and pingUserId or nil)
+        else
+            debugWarn("Webhook URL is not set.")
+        end
+    end
+})
+
+local AutoUnlockHatching = FarmingSection:AddToggle("AutoUnlockHatching", {
+    Title = "Auto Unlock Hatching",
+    Default = false,
+    Callback = function(state)
+        isrunning = state
+        while isrunning do
+            local args = {
+                "UnlockHatchingZone"
+            }
+            Remote:FireServer(unpack(args))
+            wait(0.5)            
+        end
+    end
+})
+
+
+local Time2SendWebhook = WHConfig:AddInput("Time2SendWebhook", {
+    Title = "Time to Send Webhook",
+    Default = 10,
+    Numeric = true,
+    Callback = function(value)
+        Time2SendWebhookValue = tonumber(value) or 5
+    end
+})
+
+WebhookStats = Notification:AddToggle("WebhookStats", {
+    Title = "Send Statistics",
+    Default = false,
+    Callback = function(state)
+        isrunning = state
+        task.spawn(function()
+            while isrunning do
+                task.wait(Time2SendWebhookValue)
+                if webhookUrl and webhookUrl ~= "" then
+                    WebhookLib.SendMessageEMBED(webhookUrl, {
+                        title = "Bubble Gum Simulator INFINITY | UB Hub",
+                        description = "Statistics Webhook",
+                        color = 65280,
+                        fields = {
+                            {
+                                name = "-> Statistics",
+                                value = Player.Name .. "\n" ..
+                                    " 💰 Coins: " .. latestcoins .. "\n" ..
+                                    "💎 Gems: " .. latestgems .. "\n" ..
+                                    ":bubbles:  Bubbles: " .. latestbubble,
+                                inline = false
+                            },
+                            {
+                                name = "-> Software Info",
+                                value = _G.currentVersion .. "\n" .. "Executor: " .. identifyexecutor() "\n",
+                                inline = false
+                            }
+                        },
+                        footer = {
+                            text = "Report any bugs to <#1325808008743223316>",
+                        },
+                        thumbnail = {
+                            url = "https://gitlab.com/r_soft/main/-/raw/main/UB_hub_logo.png"
+                        },
+                        author = {
+                            name = "",
+                        }
+                    }, pingUserId ~= "" and pingUserId or nil)
+                else
+                    warn("Webhook URL is not set!")
+                end
+            end
+        end)
+    end
+})
+ClaimSeason = Reward:AddToggle("AutoClaimSeason", {
+    Title = "Auto Claim Season",
+    Default = false,
+    Callback = function(state)
+        while state do
+            local args = {
+                "ClaimSeason"
+            }
+            Remote:FireServer(unpack(args))
+            wait(0.5)
+        end
+    end       
+})
+selectedEgg = "Common Egg"
+ClaimPrize = Reward:AddToggle("AutoClaimPrize", {
+    Title = "Auto Claim Prize",
+    Default = false,
+    Callback = function(state)
+        if state then
+            while state do
+                for _, egg in pairs(data.Eggs) do
+                    local args = {
+                        "EggPrizeClaim",
+                        egg.Name,
+                        false
+                    }
+                    Remote:FireServer(unpack(args))
+                end
+                wait(0.5)
+            end
+        end
+    end
+})
+
+local AutoBestpets = PetsSection:AddToggle("AutoBestPets", {
+    Title = "Auto Best Pets",
+    Default = false,
+    Callback = function(state)
+        isrunning = state
+        while isrunning do
+            local args = {
+                "EquipBestPets"
+            }
+            Remote:FireServer(unpack(args))
+            wait(0.5)            
+        end
+    end
+})
+
+local UpgradeMasteryPets = Mastery:AddToggle("AutoUpgradeMasteryPets", {
+    Title = "Auto Upgrade Mastery Pets",
+    Default = false,
+    Callback = function(state)
+        isrunning = state
+        while isrunning do
+            local args = {
+                "UpgradeMastery",
+                "Pets"
+            }
+            Remote:FireServer(unpack(args))
+            wait(0.5)            
+        end
+    end
+})
+
+local UpgradeMasteryBuffs = Mastery:AddToggle("AutoUpgradeMasteryBuffs", {
+    Title = "Auto Upgrade Mastery Buffs",
+    Default = false,
+    Callback = function(state)
+        isrunning = state
+        while isrunning do
+            local args = {
+                "UpgradeMastery",
+                "Buffs"
+            }
+            Remote:FireServer(unpack(args))
+            wait(0.5)            
+        end
+    end
+})
+
+local UpgradeMasteryShops = Mastery:AddToggle("AutoUpgradeMasteryShops", {
+    Title = "Auto Upgrade Mastery Shops",
+    Default = false,
+    Callback = function(state)
+        isrunning = state
+        while isrunning do
+            local args = {
+                "UpgradeMastery",
+                "Shops"
+            }
+            Remote:FireServer(unpack(args))
+            wait(0.5)            
+        end
+    end
+})
+local GameStats = CurrentStats:AddParagraph({
+    Title = "Game Stats",
+    Content = "",
+})
+task.spawn(function()
+    while true do
+        GameStats:SetDesc("Coins: " .. latestcoins .. "\n" .. "Gems: " .. latestgems .. "\n" .. "Bubbles: " .. latestbubble)
+        task.wait(1)
+    end
+end)
+
+local SelectPotion = Potion:AddDropdown("SelectPotion", {
+    Title = "Select Potion",
+    Values = data.Potion,
+    Default = "Coins",
+    Multi = false,
+    Callback = function(value)
+        selectedPotion = value
+    end
+})
+
+local ChoosePower = Potion:AddDropdown("ChoosePower", {
+    Title = "Choose Power",
+    Values = {1, 2, 3, 4, 5, 6},
+    Default = "1",
+    Multi = false,
+    Callback = function(value)
+        selectedPower = value
+    end
+})
+
+local AutoUsePotion = Potion:AddToggle("AutoUsePotion", {
+    Title = "Auto Use Potion",
+    Default = false,
+    Callback = function(state)
+        isrunning = state
+        while isrunning do
+            local args = {
+                "UsePotion",
+                selectedPotion,
+                selectedPower
+            }
+            Remote:FireServer(unpack(args))
+            if success then
+                potionused = true
+            else
+                potionused = false
+            end
+            wait(0.5)
+        end
+    end
+})
+
+local AutoUseAllPotion = Potion:AddToggle("AutoUseAllPotion", {
+    Title = "Auto Use all Potions",
+    Default = false,
+    Callback = function(state)
+        isrunning = state
+        while isrunning do
+            for _, potion in pairs(data.Potion) do
+                if potion.Quantity and potion.Quantity > 0 then
+                    for i = 1, potion.Quantity do
+                        local args = {
+                            "UsePotion",
+                            potion.Name,
+                            i
+                        }
+                        Remote:FireServer(unpack(args))
+                        wait(0.1)
+                    end
+                end
+            end
+            wait(0.5)
+        end
+    end
+})
+
+local AutoClaimVoidChest = Reward:AddToggle("AutoClaimVoidChest", {
+    Title = "Auto Claim Void Chest",
+    Default = false,
+    Callback = function(state)
+        isrunning = state
+        while isrunning do
+            local args = {
+                "ClaimChest",
+                "Void Chest"
+            }
+            Remote:FireServer(unpack(args))
+            
+            wait(0.5)            
+        end
+    end
+})
+
+local AutoClaimgiantChest = Reward:AddToggle("AutoClaimGiantChest", {
+    Title = "Auto Claim Giant Chest",
+    Default = false,
+    Callback = function(state)
+        isrunning = state
+        while isrunning do
+            local args = {
+                "ClaimChest",
+                "Giant Chest"
+            }
+            Remote:FireServer(unpack(args))
+            
+            wait(0.5)            
+        end
+    end
+})
+
+local AutoClaiminfChest = Reward:AddToggle("AutoClaimInfintyChest", {
+    Title = "Auto Claim Infinity Chest",
+    Default = false,
+    Callback = function(state)
+        isrunning = state
+        while isrunning do
+            local args = {
+                "ClaimChest",
+                "Infinty Chest"
+            }
+            Remote:FireServer(unpack(args))
+            wait(0.5)            
+        end
+    end
+})
+
+local function findPetFolderByAttribute(petname)
+    local petsFolder = workspace:FindFirstChild("Markers") and workspace.Markers:FindFirstChild("Pets")
+    if petsFolder then
+        for _, folder in pairs(petsFolder:GetChildren()) do
+            local attributeValue = folder:GetAttribute("Name")
+            if attributeValue and attributeValue == petname then
+                return folder
+            end
+        end
+    end
+    return nil
+end
+InputJobID = Server:AddInput("InputJobID", {
+    Title = "Server JobID",
+    Placeholder = "Write your Job ID here",
+    Callback = function(value)
+        jobid = value
+    end
+})
+Server:AddButton({
+    Title = "Join JobID",
+    Callback = function()
+        if jobid and jobid ~= "" then
+            game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, jobid, game.Players.LocalPlayer)
+            openAfterHop()
+        else
+            Library:Notify({
+                Title = "Invalid Job ID",
+                Content = "Please enter a valid Job ID.",
+                Duration = 5,
+            })
+        end
+    end
+})
+Server:AddButton({
+    Title = "Rejoin Server",
+    Callback = function()
+        Window:Dialog{
+            Title = "✅ Confirmation",
+            Content = "You are sure you want to rejoin server?",
+            Buttons = {
+                {
+                    Title = "Confirm",
+                    Callback = function()
+                        game:GetService("TeleportService"):Teleport(game.PlaceId, game.Players.LocalPlayer)
+                        openAfterHop()
+                    end
+                },
+                {
+                    Title = "Cancel",
+                    Callback = function() end
+                }
+            }
+        }
+    end
+})
+
+local namesofegg = {}
+local SelectEgg = Pets:AddDropdown("SelectEgg", {
+    Title = "Select Egg",
+    Values = namesofegg,
+    Default = nil,
+    Multi = false,
+    Callback = function(value)
+        selectedEgg = value
+    end
+})
+
+local SelectRiftChest = RiftChests:AddDropdown("SelectRiftChest", {
+    Title = "Select Rift Chest",
+    Values = {"Golden Chest", "Royal Chest"},
+    Default = "Golden Chest",
+    Multi = false,
+})
+
+SelectRiftChest:OnChanged(function(Value)
+    selectedRiftChest = Value
+end)
+
+local AutoChestRift = RiftChests:AddToggle("AutoReftChests",
+{
+    Title = "Auto Collect Rift Chest",
+    Default = false,
+    Callback = function(state)
+        if state then
+            isrunning = state
+            while isrunning do
+                if selectedRiftChest == "Golden Chest" then
+                    local riftChest = workspace.Rendered.Rifts:FindFirstChild("golden-chest")
+                    if riftChest then
+                        local currentPosition = char.HumanoidRootPart.Position
+                        local targetPosition = workspace.Rendered.Rifts["golden-chest"].WorldPivot.Position
+                        tweenprox(targetPosition.X, targetPosition.Y + 0.5, targetPosition.Z)
+                        local args = {
+                            "UnlockRiftChest",
+                            "golden-chest",
+                            false
+                        }
+                        Remote:FireServer(unpack(args))
+                        task.wait(5)
+                        tweenprox(currentPosition.X, currentPosition.Y + 0.5, currentPosition.Z)
+                        break
+                    end
+                elseif selectedRiftChest == "Royal Chest" then
+                    local royalchest = workspace.Rendered.Rifts:FindFirstChild("royal-chest")
+                    if royalchest then
+                        local targetPosition = workspace.Rendered.Rifts["royal-chest"].WorldPivot.Position
+                        local currentPosition = char.HumanoidRootPart.Position
+                        local targetCFrame = CFrame.new(targetPosition.X, targetPosition.Y + 10, targetPosition.Z)
+                        tweenprox(targetCFrame.Position.X, targetCFrame.Position.Y, targetCFrame.Position.Z)
+                        local args = {
+                            "UnlockRiftChest",
+                            "royal-chest",
+                             false
+                        }
+                        Remote:FireServer(unpack(args))
+                        local returnCFrame = CFrame.new(currentPosition.X, currentPosition.Y + 0.5, currentPosition.Z)
+                        tweenprox(returnCFrame.Position.X, returnCFrame.Position.Y, returnCFrame.Position.Z)
+                        break
+                    end
+                end
+                task.wait(0.5)
+            end
+        end
+    end
+})
+
+local AutoOpenData = Tweaks:AddToggle("AutoOpenData", {
+    Title = "Auto Open Data",
+    Description = "This will attempt to load egg data automatically",
+    Default = true,
+    Callback = function(state)
+        eggpos = loadstring(game:HttpGet("https://gitlab.com/r_soft/main/-/raw/main/Game%20Data/Bubble%20Gum%20Simulator%20INFINITY/EggData.lua"))()
+        namesofegg = {} 
+        for eggName, position in pairs(eggpos) do
+            if position and eggName:find("Egg") then
+                table.insert(namesofegg, eggName)
+            end
+        end
+        SelectEgg:SetValues(namesofegg)
+        wait(0.5)
+    end
+})
+local DelaytoHatch = Pets:AddInput("DelaytoHatch", {
+    Title = "Delay to Hatch",
+    Default = 0,
+    Numeric = true,
+    Callback = function(value)
+        DelaytoHatchValue = tonumber(value) or 0.5
+    end
+})
+hatchedCount = 0
+AmmounttoHatchValue = 1
+local AmmounttoHatch = Pets:AddInput("AmmounttoHatch", {
+    Title = "Ammount to Hatch",
+    Default = 1,
+    Numeric = true,
+    Callback = function(value)
+        AmmounttoHatchValue = tonumber(value) or 1
+    end
+})
+local AutoHatchEgg = Pets:AddToggle("AutoHatchs", {
+    Title = "Auto Hatch",
+    Description = "Auto Hatch selected egg",
+    Default = false,
+    Callback = function(state)
+        isrunning = state
+        if isrunning then
+            hatchedCount = 0 
+            while isrunning and hatchedCount < AmmounttoHatchValue do
+                local targetPosition = eggpos[selectedEgg]
+                if targetPosition then
+                    local yOffset = 0.5
+                    local targetCFrame = CFrame.new(targetPosition.X, targetPosition.Y + yOffset, targetPosition.Z)
+                    tweenprox(targetCFrame.Position.X, targetCFrame.Position.Y, targetCFrame.Position.Z)
+                    local args = {
+                        "HatchEgg",
+                        selectedEgg,
+                        1
+                    }
+                    Remote:FireServer(unpack(args))
+                    wait(DelaytoHatchValue)
+                    hatchedCount = hatchedCount + 1
+                else
+                    print("Not a valid selection of egg:", selectedEgg)
+                end
+                task.wait(0.5)
+            end
+        end
+    end
+})
+local CopyJobId = Server:AddButton({
+    Title = "Copy Job ID",
+    Callback = function()
+        local jobId = game.JobId
+        setclipboard(jobId)
+        Library:Notify({
+            Title = "Job ID Copied",
+            Content = "Job ID copied to clipboard: " .. jobId,
+            Duration = 5,
+        })
+    end
+})
+local rifteggs = {}
+local empty = {}
+local SelectRiftEgg = RiftEdition:AddDropdown("SelectRiftEgg", {
+    Title = "Select Rift Egg Target",
+    Values = rifteggs,
+    Default = "Golden Egg",
+    Multi = false,
+})
+
+SelectRiftEgg:OnChanged(function(Value)
+    selectedRiftEgg = Value
+end)
+
+local SelectEggName = RiftEdition:AddDropdown("SelectEgg", {
+    Title = "Select Egg Name",
+    Values = namesofegg,
+    Default = "Golden Egg",
+    Multi = false,
+})
+
+SelectEggName:OnChanged(function(Value)
+    selectedEggRiftName = Value
+end)
+
+local RefreshRiftEgg = RiftEdition:AddButton({
+    Title = "Refresh Rift Eggs",
+    Callback = function()
+        local riftfolder = workspace.Rendered.Rifts
+        if riftfolder then
+            for _, egg in ipairs(riftfolder:GetChildren()) do
+                if egg:IsA("Model") and egg.Name:find("egg") or egg.Name:find("event") then
+                    table.insert(rifteggs, egg.Name)
+                end
+            end
+            SelectRiftEgg:SetValues(rifteggs)
+        else
+            Library:Notify({
+                Title = "No Rifts Found",
+                Content = "No rifts found",
+                Duration = 5,
+            })
+        end
+    end
+})
+local AutoHatchEggRift = RiftEdition:AddToggle("Autohatchriftegg", {
+    Title = "Auto Hatch Rift Egg",
+    Default = false,
+    Callback = function(state)
+        isrunning = state
+        while isrunning do
+            local targetPosition = workspace.Rendered.Rifts[selectedRiftEgg].WorldPivot.Position
+            local currentPosition = char.HumanoidRootPart.Position
+            local targetCFrame = CFrame.new(targetPosition.X, targetPosition.Y + 5, targetPosition.Z)
+            tweenprox(targetCFrame.Position.X, targetCFrame.Position.Y, targetCFrame.Position.Z)
+            local args = {
+                "HatchEgg",
+                selectedEggRiftName,
+                1
+            }
+            Remote:FireServer(unpack(args))       
+        end    
+    end
+})
+
+local AutoFindBubbleRift = RiftBubbleSection:AddToggle("AutoFindBubbleRift", {
+    Title = "Auto Find Bubble Rift",
+    Default = false,
+    Callback = function(state)
+        isrunning = state
+        while isrunning do
+            local bubbleRift = workspace.Rendered.Rifts:FindFirstChild("bubble-rift")
+            if bubbleRift then
+                local targetPosition = bubbleRift.WorldPivot.Position
+                local currentPosition = char.HumanoidRootPart.Position
+                local targetCFrame = CFrame.new(targetPosition.X, targetPosition.Y + 0.5, targetPosition.Z)
+                tweenprox(targetCFrame.Position.X, targetCFrame.Position.Y, targetCFrame.Position.Z)
+                bubbler = true
+            else
+                warn("Bubble Rift not found!")
+                break
+            end
+            wait(0.5)            
+        end    
+    end
+})
+
+local AutoSellInBubbleRift = RiftBubbleSection:AddToggle("AutoSellInBubbleRift", {
+    Title = "Auto Sell in Bubble Rift",
+    Default = false,
+    Callback = function(state)
+        isrunning = state
+        while isrunning do
+            if bubbler then
+                local args = {
+                    "SellBubble"
+                }
+                Remote:FireServer(unpack(args))  
+                wait(0.5)
+            else
+                warn("Bubble Rift not found!")
+            end
+            wait(0.5)
+        end
+    end
+})
+
+local AutoCollectDaily = Reward:AddToggle("AutoCollectDaily", {
+    Title = "Auto Collect Daily",
+    Default = false,
+    Callback = function(state)
+        isrunning = state
+        while isrunning do
+            local args = {
+                "DailyRewardClaimStars"
+            }
+            Remote:FireServer(unpack(args))
+            wait(0.5)
+        end
+    end           
+})
+SaveManager:LoadAutoloadConfig()

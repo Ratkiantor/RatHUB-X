@@ -434,60 +434,52 @@ local function updateetime()
 end
 RunService.Heartbeat:Connect(updateetime)
 
--- Use the correct RemoteEvent for purchases
-local RemoteEvent = game:GetService("ReplicatedStorage").Shared.Framework.Network.Remote.RemoteEvent
+-- Dependencies & Variables
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RemoteEvent = ReplicatedStorage.Shared.Framework.Network.Remote.RemoteEvent
 
--- Dropdown for Storage/Flavour
-local selectedflavours = {}
-local ChooseFlavour = Shop:AddDropdown("ChooseFlavour", {
-    Title = "Choose Storage",
-    Values = data.Flavours,
-    Default = "Bubble",
-    Multi = true,
-    Callback = function(Value)
-        selectedflavours = Value
-    end
-})
+-- Assume UI library and Shop section are already set up
+-- Assume data.Gums and data.Flavours are arrays of strings
+local Shop = Tabs.Shops -- as in your script
+local data = data -- as in your script
 
-local AutoBuyFlavour = Shop:AddToggle("AutoBuyFlavour", {
-    Title = "Auto Buy Storage",
-    Default = false,
-    Callback = function(state)
-        isrunningFlavour = state
-        task.spawn(function()
-            while isrunningFlavour do
-                for _, flavour in ipairs(selectedflavours) do
-                    RemoteEvent:FireServer("GumShopPurchase", flavour)
-                    task.wait(0.1)
-                end
-                task.wait(0.5)
-            end
-        end)
-    end
-})
-
--- Dropdown for Gum
-local selectedgums = {}
+-- For Gum
+local selectedGums = {}
 local ChooseGum = Shop:AddDropdown("ChooseGum", {
     Title = "Choose Gum",
     Values = data.Gums,
-    Default = "Blue",
-    Multi = true,
+    Default = data.Gums[1],
+    Multi = true, -- Set to false if you want single select
     Callback = function(Value)
-        selectedgums = Value
+        -- Defensive: Always store as table
+        if type(Value) == "table" then
+            selectedGums = Value
+        elseif type(Value) == "string" and Value ~= "" then
+            selectedGums = {Value}
+        else
+            selectedGums = {}
+        end
+        print("Selected gums:", selectedGums)
     end
 })
 
+local isRunningGum = false
 local AutoBuyGum = Shop:AddToggle("AutoBuyGum", {
     Title = "Auto Buy Gum",
     Default = false,
     Callback = function(state)
-        isrunningGum = state
+        isRunningGum = state
         task.spawn(function()
-            while isrunningGum do
-                for _, gum in ipairs(selectedgums) do
-                    RemoteEvent:FireServer("GumShopPurchase", gum)
-                    task.wait(0.1)
+            while isRunningGum do
+                if selectedGums and #selectedGums > 0 then
+                    for _, gum in ipairs(selectedGums) do
+                        if gum and gum ~= "" then
+                            RemoteEvent:FireServer("GumShopPurchase", gum)
+                            task.wait(0.1)
+                        end
+                    end
+                else
+                    warn("No gum selected, toggle will remain on but nothing is bought.")
                 end
                 task.wait(0.5)
             end
@@ -495,6 +487,48 @@ local AutoBuyGum = Shop:AddToggle("AutoBuyGum", {
     end
 })
 
+-- For Flavour
+local selectedFlavours = {}
+local ChooseFlavour = Shop:AddDropdown("ChooseFlavour", {
+    Title = "Choose Flavour",
+    Values = data.Flavours,
+    Default = data.Flavours[1],
+    Multi = true, -- Set to false if you want single select
+    Callback = function(Value)
+        if type(Value) == "table" then
+            selectedFlavours = Value
+        elseif type(Value) == "string" and Value ~= "" then
+            selectedFlavours = {Value}
+        else
+            selectedFlavours = {}
+        end
+        print("Selected flavours:", selectedFlavours)
+    end
+})
+
+local isRunningFlavour = false
+local AutoBuyFlavour = Shop:AddToggle("AutoBuyFlavour", {
+    Title = "Auto Buy Flavour",
+    Default = false,
+    Callback = function(state)
+        isRunningFlavour = state
+        task.spawn(function()
+            while isRunningFlavour do
+                if selectedFlavours and #selectedFlavours > 0 then
+                    for _, flavour in ipairs(selectedFlavours) do
+                        if flavour and flavour ~= "" then
+                            RemoteEvent:FireServer("GumShopPurchase", flavour)
+                            task.wait(0.1)
+                        end
+                    end
+                else
+                    warn("No flavour selected, toggle will remain on but nothing is bought.")
+                end
+                task.wait(0.5)
+            end
+        end)
+    end
+})
 local RedeemAllCode = Tweaks:AddButton({
     Title = "Redeem All Codes",
     Callback = function()

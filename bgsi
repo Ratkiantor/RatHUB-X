@@ -447,29 +447,22 @@ local function findMatchingParts()
     return matchingParts
 end
 
--- Feature: Auto Collectibles for BGSI (Bubble Gum Simulator Infinite)
--- Usage: Call Feature_AutoCollectibles:Init(UISection) to add the toggle to your UI.
--- Replace 'UISection' with your actual UI tab/section (Orion, Rayfield, etc.)
+-- Feature: Auto Collect Coins (Ground Only) for BGSI
+-- This script only targets coins on the ground (not orbs, stars, gems, or chests).
 
-local Feature_AutoCollectibles = {}
-Feature_AutoCollectibles.collectDistance = 15 -- studs
-Feature_AutoCollectibles.collectiblesFolders = {
-    workspace:FindFirstChild("Orbs"),
-    workspace:FindFirstChild("Coins"),
-    workspace:FindFirstChild("Stars"),
-    workspace:FindFirstChild("Gems"),
-    workspace:FindFirstChild("Chests"),
-}
-Feature_AutoCollectibles.player = game.Players.LocalPlayer
-Feature_AutoCollectibles.enabled = false
-Feature_AutoCollectibles._thread = nil
+local Feature_AutoCollectCoins = {}
+Feature_AutoCollectCoins.collectDistance = 15 -- studs
+Feature_AutoCollectCoins.coinsFolder = workspace:FindFirstChild("Coins")
+Feature_AutoCollectCoins.player = game.Players.LocalPlayer
+Feature_AutoCollectCoins.enabled = false
+Feature_AutoCollectCoins._thread = nil
 
-function Feature_AutoCollectibles:GetRoot()
+function Feature_AutoCollectCoins:GetRoot()
     local char = self.player.Character or self.player.CharacterAdded:Wait()
     return char:FindFirstChild("HumanoidRootPart")
 end
 
-function Feature_AutoCollectibles:FireTouch(part, root)
+function Feature_AutoCollectCoins:FireTouch(part, root)
     if part and root then
         firetouchinterest(root, part, 0)
         task.wait()
@@ -477,25 +470,16 @@ function Feature_AutoCollectibles:FireTouch(part, root)
     end
 end
 
-function Feature_AutoCollectibles:CollectLoop()
+function Feature_AutoCollectCoins:CollectLoop()
     while self.enabled do
         local root = self:GetRoot()
-        for _, folder in ipairs(self.collectiblesFolders) do
-            if folder then
-                for _, obj in ipairs(folder:GetChildren()) do
-                    if obj:IsA("BasePart") and obj.Transparency < 1 and obj.CanCollide then
-                        local dist = (obj.Position - root.Position).Magnitude
-                        if dist <= self.collectDistance then
-                            self:FireTouch(obj, root)
-                        end
-                    elseif obj:IsA("Model") then
-                        local main = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
-                        if main then
-                            local dist = (main.Position - root.Position).Magnitude
-                            if dist <= self.collectDistance then
-                                self:FireTouch(main, root)
-                            end
-                        end
+        local folder = self.coinsFolder
+        if folder then
+            for _, obj in ipairs(folder:GetChildren()) do
+                if obj:IsA("BasePart") and obj.Transparency < 1 and obj.CanCollide then
+                    local dist = (obj.Position - root.Position).Magnitude
+                    if dist <= self.collectDistance then
+                        self:FireTouch(obj, root)
                     end
                 end
             end
@@ -504,14 +488,14 @@ function Feature_AutoCollectibles:CollectLoop()
     end
 end
 
-function Feature_AutoCollectibles:Enable()
+function Feature_AutoCollectCoins:Enable()
     if not self.enabled then
         self.enabled = true
         self._thread = task.spawn(function() self:CollectLoop() end)
     end
 end
 
-function Feature_AutoCollectibles:Disable()
+function Feature_AutoCollectCoins:Disable()
     self.enabled = false
     if self._thread then
         task.cancel(self._thread)
@@ -519,9 +503,9 @@ function Feature_AutoCollectibles:Disable()
     end
 end
 
-function Feature_AutoCollectibles:Init(UISection)
+function Feature_AutoCollectCoins:Init(UISection)
     UISection:AddToggle({
-        Name = "Auto Collectibles",
+        Name = "Auto Collect Coins",
         Default = false,
         Callback = function(val)
             if val then
@@ -533,7 +517,7 @@ function Feature_AutoCollectibles:Init(UISection)
     })
 end
 
-return Feature_AutoCollectibles
+return Feature_AutoCollectCoins
 
 -- Island Paths for instant TP via Remote (update as new islands come out)
 local islandRemotePaths = {

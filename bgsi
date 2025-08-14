@@ -448,33 +448,36 @@ local function findMatchingParts()
 end
 
 -- Feature: Auto Collect Coins (Ground Only) for BGSI
+-- Usage: require and call Feature_AutoCollectCoins:Init(UISection)
 -- This script only targets coins on the ground (not orbs, stars, gems, or chests).
 
 local Feature_AutoCollectCoins = {}
-Feature_AutoCollectCoins.collectDistance = 15 -- studs
-Feature_AutoCollectCoins.coinsFolder = workspace:FindFirstChild("Coins")
-Feature_AutoCollectCoins.player = game.Players.LocalPlayer
+Feature_AutoCollectCoins.collectDistance = 15
+
 Feature_AutoCollectCoins.enabled = false
 Feature_AutoCollectCoins._thread = nil
 
 function Feature_AutoCollectCoins:GetRoot()
-    local char = self.player.Character or self.player.CharacterAdded:Wait()
+    local player = game.Players.LocalPlayer
+    local char = player.Character or player.CharacterAdded:Wait()
     return char:FindFirstChild("HumanoidRootPart")
 end
 
 function Feature_AutoCollectCoins:FireTouch(part, root)
     if part and root then
-        firetouchinterest(root, part, 0)
-        task.wait()
-        firetouchinterest(root, part, 1)
+        pcall(function()
+            firetouchinterest(root, part, 0)
+            task.wait()
+            firetouchinterest(root, part, 1)
+        end)
     end
 end
 
 function Feature_AutoCollectCoins:CollectLoop()
     while self.enabled do
         local root = self:GetRoot()
-        local folder = self.coinsFolder
-        if folder then
+        local folder = workspace:FindFirstChild("Coins")
+        if root and folder then
             for _, obj in ipairs(folder:GetChildren()) do
                 if obj:IsA("BasePart") and obj.Transparency < 1 and obj.CanCollide then
                     local dist = (obj.Position - root.Position).Magnitude
